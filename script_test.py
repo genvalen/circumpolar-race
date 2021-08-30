@@ -22,7 +22,27 @@ class TestScript(unittest.TestCase):
             script.sort_files_by_region("Connie Karras"), 
             expected
         )
-    
+
+    def test_that_files_are_properly_sorted_by_region2(self):
+        expected = [   
+            "participants/joshua-fosberg/20210824-Region1Running_Fosberg_loggedActivities.csv",
+            "participants/joshua-fosberg/20210824-Region2Running_Fosberg_loggedActivities.csv",
+            "participants/joshua-fosberg/20210824-Region3Running_Fosberg_loggedActivities.csv",
+            "participants/joshua-fosberg/20210824-Region4Running_Fosberg_loggedActivities.csv",
+            "participants/joshua-fosberg/20210824-Region5Running_Fosberg_loggedActivities.csv",
+            "participants/joshua-fosberg/20210824-Region6Running_Fosberg_loggedActivities.csv",
+            "participants/joshua-fosberg/20210824-Region7Running_Fosberg_loggedActivities.csv",
+            "participants/joshua-fosberg/20210824-Region8Running_Fosberg_loggedActivities.csv",
+            "participants/joshua-fosberg/20210824-Region9Running_Fosberg_loggedActivities.csv",
+            "participants/joshua-fosberg/20210824-Region10Running_Fosberg_loggedActivities.csv",
+            "participants/joshua-fosberg/20210824-Region11Running_Fosberg_loggedActivities.csv",
+            "participants/joshua-fosberg/20210824-Region12Running_Fosberg_loggedActivities.csv"
+        ] 
+        self.assertListEqual(
+            script.sort_files_by_region("Joshua Fosberg"), 
+            expected
+        )
+        
 
     def test_that_participant_information_is_properly_formatted(self):
         expected = [
