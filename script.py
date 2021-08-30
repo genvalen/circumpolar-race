@@ -1,29 +1,20 @@
 from typing import List
+import utils.writer as write
 import pandas as pd
-import csv
 import glob
 
-def write(output_file_name):
-    with open(output_file_name, "w") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            "Activity Date",
-            "Distance in Miles",
-            "Activity Type",
-            "Comment"
-            ]
-        )
 
 def sort_files_by_region(name: str) -> List[str]:
     # restructure `name` so it resembles the directory name
-    name = name.lower().replace(" ", "-")
+    name: str = name.lower().replace(" ", "-")
 
-    path = f"participants/{name}/*"
-    filenames = glob.glob(path)
-
+    # import filenames
+    path: str = f"participants/{name}/*"
+    filenames: list = glob.glob(path)
+ 
     part1, part2, part3 = filenames[0].partition("-Region")
     part3 = list(part3.partition("Running_"))
-    seen = set()
+    seen: set  = set()
 
     # prep filenames to be sorted by region (a number)
     for i, f in enumerate(filenames):
@@ -31,13 +22,13 @@ def sort_files_by_region(name: str) -> List[str]:
         f[2] = list(f[2].partition("Running_"))
         region = int(f[2][0])
         f[2][0] = region
-        
+
         seen.add(region)
 
         filenames[i] = f
     
-    # Add missing regions to list of filenames
-    missing_regions = set(range(1,12+1)).difference(seen)
+    # Add any missing filenames into the list of filenames
+    missing_regions = set(range(1,13)).difference(seen)
     for region in missing_regions:
         part3[0] = region
         new_file = [part1, part2, part3]
@@ -45,17 +36,20 @@ def sort_files_by_region(name: str) -> List[str]:
 
     # sort by region
     filenames = sorted(filenames, key=lambda x: x[2])
-
+ 
     # convert files back to strs
     sorted_files = []
     for i, f in enumerate(filenames, 1):
         f[2][0] = str(f[2][0])
         f[2] = "".join(f[2])
         f = "".join(f)
-        sorted_files.append(f)
 
+        # create a file if there isn't one
         if i not in seen:
             print(i)
+            write.write_csv(f)
+
+        sorted_files.append(f)
 
     return sorted_files
 
@@ -87,10 +81,9 @@ if __name__ == "__main__":
         "Don Willis"
     ]
 
-
     # format data
-    regions = sort_files_by_region("Connie Karras")
-    participant_data = format_participant_data("Connie Karras", regions)
+    regions = sort_files_by_region("Joshua Fosberg")
+    participant_data = format_participant_data("Joshua Fosberg", regions)
 
     # create a DF
     data = []
@@ -113,11 +106,10 @@ if __name__ == "__main__":
     df = pd.DataFrame(data, columns=columns)
     df["Total"] = df.loc[:].sum(axis=1, numeric_only=True)
 
-    # Export dataframe as an Excel file
-    output_file = r"circumpolar-race-results.xlsx"
-    df.to_excel(output_file, index = False)
+    # # Export df as an Excel file
+    # output_file = r"circumpolar-race-results.xlsx"
+    # df.to_excel(output_file, index = False)
 
-    # Export dataframe as a CSV file
-    output_file = r"circumpolar-race-results.csv"
-    df.to_csv(output_file, index = False)
-
+    # # Export df as a CSV file
+    # output_file = r"circumpolar-race-results.csv"
+    # df.to_csv(output_file, index = False)
