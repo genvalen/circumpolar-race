@@ -36,13 +36,13 @@ class TestScript(unittest.TestCase):
             "participants/joshua-fosberg/20210824-Region9Running_Fosberg_loggedActivities.csv",
             "participants/joshua-fosberg/20210824-Region10Running_Fosberg_loggedActivities.csv",
             "participants/joshua-fosberg/20210824-Region11Running_Fosberg_loggedActivities.csv",
-            "participants/joshua-fosberg/20210824-Region12Running_Fosberg_loggedActivities.csv"
+            "participants/joshua-fosberg/20210830-Region12Running_Fosberg_loggedActivities.csv"
         ] 
         self.assertListEqual(
             script.sort_files_by_region("Joshua Fosberg"), 
             expected
         )
-        
+
 
     def test_that_participant_information_is_properly_formatted(self):
         expected = [
@@ -69,6 +69,29 @@ class TestScript(unittest.TestCase):
         )
 
 
+    def test_that_participant_information_is_properly_formatted(self):
+        expected = [
+            "Joshua Fosberg", 
+            0, 
+            0, 
+            234.72, 
+            247.23, 
+            154.7, 
+            116.4, 
+            61.08,
+            98.68, 
+            308.57, 
+            407.1, 
+            242.28, 
+            136.85
+        ]
+
+        data = script.sort_files_by_region("Joshua Fosberg")
+
+        self.assertListEqual(
+            script.format_participant_data("Joshua Fosberg", data), 
+            expected
+        )
     @skip
     def test_that_total_milleage_is_calculated_well(self):
         expected = 4310.31
