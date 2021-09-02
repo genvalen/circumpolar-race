@@ -3,7 +3,7 @@ from unittest.case import skip
 import script
 
 class TestScript(unittest.TestCase):
-    def test_that_files_are_properly_sorted_by_region(self):
+    def test_that_files_are_properly_sorted_by_region(self): 
         expected = [   
             "participants/connie-karras/20210829-Region1Running_Karras_loggedActivities.csv",
             "participants/connie-karras/20210829-Region2Running_Karras_loggedActivities.csv",

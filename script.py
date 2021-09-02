@@ -11,7 +11,7 @@ def sort_files_by_region(name: str) -> List[str]:
     # import filenames
     path: str = f"participants/{name}/*"
     filenames: list = glob.glob(path)
- 
+    print(participant)
     part1, part2, part3 = filenames[0].partition("-Region")
     part3 = list(part3.partition("Running_"))
     seen: set  = set()
@@ -30,13 +30,13 @@ def sort_files_by_region(name: str) -> List[str]:
     # Add any missing filenames into the list of filenames
     missing_regions = set(range(1,13)).difference(seen)
     for region in missing_regions:
-        part3[0] = region
-        new_file = [part1, part2, part3]
+        new_part3 = [region] + part3[1:]
+        new_file = [part1, part2, new_part3]
         filenames.append(new_file)
 
     # sort by region
     filenames = sorted(filenames, key=lambda x: x[2])
- 
+
     # convert files back to strs
     sorted_files = []
     for i, f in enumerate(filenames, 1):
@@ -46,7 +46,6 @@ def sort_files_by_region(name: str) -> List[str]:
 
         # create a file if there isn't one
         if i not in seen:
-            print(i)
             write.write_csv(f)
 
         sorted_files.append(f)
@@ -54,11 +53,11 @@ def sort_files_by_region(name: str) -> List[str]:
     return sorted_files
 
 
-def format_participant_data(participant: str, regions: List[str]) -> list:
+def format_participant_data(participant: str, filenames: List[str]) -> list:
     participant_data = []
     participant_data.append(participant)
 
-    df_objects = [pd.read_csv(region) for region in regions]
+    df_objects = [pd.read_csv(f) for f in filenames]
 
     for df in df_objects:
         miles = round(df['Distance in Miles'].sum(), 2)
@@ -82,11 +81,13 @@ if __name__ == "__main__":
     ]
 
     # format data
-    regions = sort_files_by_region("Joshua Fosberg")
-    participant_data = format_participant_data("Joshua Fosberg", regions)
+    data = []
+    for participant in participants:
+        files = sort_files_by_region(participant)
+        participant_data = format_participant_data(participant, files)
+        data.append(participant_data)
 
     # create a DF
-    data = []
     columns = [
         "Team Member",
         "Region 1", 
@@ -106,10 +107,10 @@ if __name__ == "__main__":
     df = pd.DataFrame(data, columns=columns)
     df["Total"] = df.loc[:].sum(axis=1, numeric_only=True)
 
-    # # Export df as an Excel file
-    # output_file = r"circumpolar-race-results.xlsx"
-    # df.to_excel(output_file, index = False)
+    # Export df as an Excel file
+    output_file = r"circumpolar-race-results.xlsx"
+    df.to_excel(output_file, index = False)
 
-    # # Export df as a CSV file
-    # output_file = r"circumpolar-race-results.csv"
-    # df.to_csv(output_file, index = False)
+    # Export df as a CSV file
+    output_file = r"circumpolar-race-results.csv"
+    df.to_csv(output_file, index = False)
