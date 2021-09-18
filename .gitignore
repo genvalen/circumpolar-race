@@ -148,3 +148,6 @@ cython_debug/
 # personal
 notes.txt
 ~*.xlsx
+
+# versions of spreadsheet
+*.xlsx
