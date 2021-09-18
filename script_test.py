@@ -16,7 +16,7 @@ class TestScript(unittest.TestCase):
             "participants/connie-karras/20210829-Region9Running_Karras_loggedActivities.csv",
             "participants/connie-karras/20210829-Region10Running_Karras_loggedActivities.csv",
             "participants/connie-karras/20210829-Region11Running_Karras_loggedActivities.csv",
-            "participants/connie-karras/20210829-Region12Running_Karras_loggedActivities.csv"
+            "participants/connie-karras/20210907-Region12Running_Karras_loggedActivities.csv"
         ]
         self.assertListEqual(
             script.sort_files_by_region("Connie Karras"), 
@@ -36,7 +36,7 @@ class TestScript(unittest.TestCase):
             "participants/joshua-fosberg/20210824-Region9Running_Fosberg_loggedActivities.csv",
             "participants/joshua-fosberg/20210824-Region10Running_Fosberg_loggedActivities.csv",
             "participants/joshua-fosberg/20210824-Region11Running_Fosberg_loggedActivities.csv",
-            "participants/joshua-fosberg/20210830-Region12Running_Fosberg_loggedActivities.csv"
+            "participants/joshua-fosberg/20210907-Region12Running_Fosberg_loggedActivities.csv"
         ] 
         self.assertListEqual(
             script.sort_files_by_region("Joshua Fosberg"), 

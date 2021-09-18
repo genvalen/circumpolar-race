@@ -11,7 +11,7 @@ def sort_files_by_region(name: str) -> List[str]:
     # import filenames
     path: str = f"participants/{name}/*"
     filenames: list = glob.glob(path)
-    print(participant)
+
     part1, part2, part3 = filenames[0].partition("-Region")
     part3 = list(part3.partition("Running_"))
     seen: set  = set()
@@ -26,7 +26,7 @@ def sort_files_by_region(name: str) -> List[str]:
         seen.add(region)
 
         filenames[i] = f
-    
+
     # Add any missing filenames into the list of filenames
     missing_regions = set(range(1,13)).difference(seen)
     for region in missing_regions:
@@ -66,7 +66,7 @@ def format_participant_data(participant: str, filenames: List[str]) -> list:
     return participant_data
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     participants = [
         "Sketch Ditty",
         "David Eckardt",
@@ -77,7 +77,15 @@ if __name__ == "__main__":
         "Connie Karras",
         "Zack Lever",
         "David Ralston",
-        "Don Willis"
+        "Don Willis",
+        "Ashley Blake",
+        "Chris Head",
+        "Frank Bozanich",
+        "Micha Shines",
+        "Norm Williams",
+        "Shawn Roberts",
+        "Steven Kornhaus",
+        "Tim Post"
     ]
 
     # format data
@@ -89,7 +97,7 @@ if __name__ == "__main__":
 
     # create a DF
     columns = [
-        "Team Member",
+        " ",
         "Region 1", 
         "Region 2", 
         "Region 3", 
@@ -104,13 +112,76 @@ if __name__ == "__main__":
         "Region 12"
     ]
 
-    df = pd.DataFrame(data, columns=columns)
-    df["Total"] = df.loc[:].sum(axis=1, numeric_only=True)
+    region_names = [
+        " ",
+        "Latin America",
+        "Andes",
+        "Pampas",
+        "Antarctica",
+        "Down Under",
+        "The Islands",
+        "SE Asia",
+        "Indian Sub",
+        "The Stans",
+        "Europe",
+        "GW North",
+        "Lower 48"
+    ]
+
+    start_date = [
+        " ",
+        "Sept, 2020",
+        "Oct, 2020",
+        "Nov, 2020",
+        "Dec, 2020",
+        "Jan, 2021",
+        "Feb, 2021",
+        "Mar, 2021",
+        "Apr, 2021",
+        "May, 2021",
+        "Jun, 2021",
+        "Jul, 2021",
+        "Aug, 2021"
+    ]
+
+    space = [" "] * 13
+
+    header = pd.MultiIndex.from_arrays([
+        # top thre rows need to be formatted with "merge and center" in excel
+        ["", "2020 CIRCUMPOLAR RACE AROUND THE WORLD"] + [" "]*11, 
+        ["", "TEAM \"IN JESPER'S FOOTSTEPS\""] + [" "]*11,
+        ["", "30,208 MILES / 48,615 KILOMETERS / 362 DAYS"] + [" "]*11, 
+        space, 
+        space, 
+        start_date, 
+        columns, 
+        region_names, 
+        space, 
+        space, 
+        space
+        ])
+
+    df = pd.DataFrame(data, columns=header)
+
+    # Create rows/cols that contain totals
+    df['Total Mileage'] = df.loc[:].sum(axis=1, numeric_only=True)
+    row_total = list(df.sum(axis=0, numeric_only=True))
+    row_total.insert(0, "Miles Per Region")
+    
+    # sorting
+    df = df.sort_values(by='Total Mileage', ascending=False)
+    df = df.reset_index(drop=True)
+    df.index += 1
+
+    df.index.name = "Rank"
+
+    # add row totals
+    df.loc[len(df.index)+1] = row_total
 
     # Export df as an Excel file
     output_file = r"circumpolar-race-results.xlsx"
-    df.to_excel(output_file, index = False)
+    df.to_excel(output_file, index=1)
 
     # Export df as a CSV file
     output_file = r"circumpolar-race-results.csv"
-    df.to_csv(output_file, index = False)
+    df.to_csv(output_file, index=1)
