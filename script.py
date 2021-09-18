@@ -1,7 +1,45 @@
-from typing import List
+from typing import List, Dict
 import utils.writer as write
 import pandas as pd
 import glob
+from bs4 import BeautifulSoup
+import requests
+
+
+def get_html(url="https://runsignup.com/RaceGroups" \
+        "/95983?groupName=In+Jesper%27s+Footsteps"
+        ) -> str:
+    resp = requests.get(url).text
+    soup = BeautifulSoup(resp, 'lxml')
+    return soup
+
+
+def get_region_paths() -> Dict[int, str]:
+    """Return a dictionary that contains region numbers and a path to
+    the webpage containing data for that region as a key-value pair.
+    """
+    soup = get_html()
+    region_url_dict = {}
+
+    # URL path and region numbers are scaped at dif iterations of loop;
+    # path comes before region, so save path until region is found.
+
+    path = ""
+    for tag in soup.find_all('td'):
+
+        # Search for URL to the next page
+        match = tag.find_all(name='a', \
+            class_='fs-lg d-block margin-t-10 margin-b-10 bold')
+
+        if match:
+            path = match[0]['href'].strip()
+
+        # Search for the region that URL represents
+        if "region" in tag.text.lower():
+            region = int(tag.text.split()[1]) # extract region number
+            region_url_dict[region] = path
+
+    return region_url_dict
 
 
 def sort_files_by_region(name: str) -> List[str]:
@@ -167,7 +205,7 @@ if __name__ == '__main__':
     df['Total Mileage'] = df.loc[:].sum(axis=1, numeric_only=True)
     row_total = list(df.sum(axis=0, numeric_only=True))
     row_total.insert(0, "Miles Per Region")
-    
+
     # sorting
     df = df.sort_values(by='Total Mileage', ascending=False)
     df = df.reset_index(drop=True)
@@ -185,3 +223,4 @@ if __name__ == '__main__':
     # Export df as a CSV file
     output_file = r"circumpolar-race-results.csv"
     df.to_csv(output_file, index=1)
+    

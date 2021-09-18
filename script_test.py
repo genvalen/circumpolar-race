@@ -97,6 +97,25 @@ class TestScript(unittest.TestCase):
         expected = 4310.31
         # self.assertEqual()
 
+    def test_get_region_paths_func(self):
+        self.assertDictEqual(
+            script.get_region_paths(),
+            {
+                1: '/RaceGroups/95983/Groups/802853',
+                11: '/RaceGroups/95983/Groups/894183',
+                10: '/RaceGroups/95983/Groups/894182',
+                9: '/RaceGroups/95983/Groups/894181',
+                8: '/RaceGroups/95983/Groups/894180',
+                7: '/RaceGroups/95983/Groups/894179',
+                6: '/RaceGroups/95983/Groups/861224',
+                5: '/RaceGroups/95983/Groups/855643',
+                4: '/RaceGroups/95983/Groups/843369',
+                3: '/RaceGroups/95983/Groups/832629',
+                2: '/RaceGroups/95983/Groups/813501',
+                12: '/RaceGroups/95983/Groups/894184'
+            }
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
