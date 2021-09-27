@@ -1,10 +1,11 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import utils.writer as write
 import pandas as pd
 import glob
 from bs4 import BeautifulSoup
 import requests
-
+import re
+from selenium import webdriver
 
 def get_html(url="https://runsignup.com/RaceGroups" \
         "/95983?groupName=In+Jesper%27s+Footsteps"
@@ -40,6 +41,57 @@ def get_region_paths() -> Dict[int, str]:
             region_url_dict[region] = path
 
     return region_url_dict
+
+
+def get_participant_data() -> Tuple[str, Dict[int, Dict[str, float]]]:
+    """Return a tuple containing a set of participant names (first and last)
+    and a dictionary of participants and mileage organized by region.
+    """
+    url_base = "https://runsignup.com"
+    region_url_dict = get_region_paths()
+
+    data = {}
+    names = set()
+
+    for region, path in region_url_dict.items():
+        url = url_base + path
+        soup = get_html(url)
+        region_data = {}
+
+        name = ""
+        for tag in soup.find_all(name="a", \
+            class_="rsuBtn rsuBtn--text-whitebg rsuBtn--xs margin-r-0"):
+            
+            url = url_base + tag['href']
+            soup2 = get_html(url)
+            print("---------------------------------")
+
+            payload = {}
+            headers = {}
+            response = requests.request("GET", url, headers=headers, data = payload)
+            
+            for t in soup2.find_all(name="span", class_="data"):
+                print()
+                print(t)
+
+
+
+            # print(url, end='\n')
+
+
+
+
+            # if tag.a:
+            #     if "miles" in tag.a.text.lower():
+            #         miles = float(tag.a.text.split()[0])
+            #         region_data[name] = miles
+            #         names.add(name)
+            #     else:
+            #         name = tag.a.text.strip().strip('.')
+
+        # data[region] = region_data
+
+    # return names, data
 
 
 def sort_files_by_region(name: str) -> List[str]:
@@ -223,4 +275,12 @@ if __name__ == '__main__':
     # Export df as a CSV file
     output_file = r"circumpolar-race-results.csv"
     df.to_csv(output_file, index=1)
-    
+    # get_participant_data()
+    URL = "https://runsignup.com/Race/Results/95983/IndividualResult/?resultSetId=212380#U44542375"
+    name= "https://runsignup.com/Race/Results/95983/LookupParticipant/?resultSetId=212380&userId=44542375#U44542375"
+    auth ="AIzaSyCfJWZshhNwB8Vrm13dSQGO8w3aRjUCgjE"
+    headers = {}
+    payload = {}
+    r = requests.get("https://analytics.runsignup.com/prod/streams/analytics/event", auth=auth)
+    # print(r.text)
+    params = "resultSetId=212380"
