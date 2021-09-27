@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import utils.writer as write
 import pandas as pd
 import glob
@@ -40,6 +40,37 @@ def get_region_paths() -> Dict[int, str]:
             region_url_dict[region] = path
 
     return region_url_dict
+
+
+def get_participant_data() -> Tuple[str, Dict[int, Dict[str, float]]]:
+    """Return a tuple containing a set of participant names (first and last)
+    and a dictionary of participants and mileage organized by region.
+    """
+    url_base = "https://runsignup.com"
+    region_url_dict = get_region_paths()
+
+    data = {}
+    names = set()
+
+    for region, path in region_url_dict.items():
+        url = url_base + path
+        soup = get_html(url)
+        region_data = {}
+
+        name = ""
+        for tag in soup.find_all(name="td"):
+
+            if tag.a:
+                if "miles" in tag.a.text.lower():
+                    miles = float(tag.a.text.split()[0])
+                    region_data[name] = miles
+                    names.add(name)
+                else:
+                    name = tag.a.text.strip().strip('.')
+
+        data[region] = region_data
+
+    return names, data
 
 
 def sort_files_by_region(name: str) -> List[str]:
@@ -223,4 +254,3 @@ if __name__ == '__main__':
     # Export df as a CSV file
     output_file = r"circumpolar-race-results.csv"
     df.to_csv(output_file, index=1)
-    
