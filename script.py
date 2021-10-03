@@ -4,6 +4,7 @@ import pandas as pd
 import glob
 from bs4 import BeautifulSoup
 import requests
+from collections import defaultdict
 
 
 def get_html(url="https://runsignup.com/RaceGroups" \
@@ -71,6 +72,49 @@ def get_participant_data() -> Tuple[str, Dict[int, Dict[str, float]]]:
         data[region] = region_data
 
     return names, data
+
+
+def get_dataframe():
+    names, src_data = get_participant_data()
+    names = sorted(list(names))
+
+    data = defaultdict(list)
+
+    data["Team Member"].extend(names)
+
+    # add row of data for each participant in `names`
+    # region is key, list of miles logged per region is value
+    for name in names:
+        for region in range(1,13):
+            col = "Region {}".format(str(region))
+
+            if name in src_data[region]:
+                data[col].append(src_data[region][name])
+            else:
+                data[col].append(0)
+
+    df = pd.DataFrame(data)
+
+    # Add column: Total Mileage
+    df['Total Mileage'] = df.loc[:].sum(axis=1, numeric_only=True)
+
+    # Sort results by Total Mileage column
+    df = df.sort_values(by='Total Mileage', ascending=False)
+
+    # Reset indices
+    df = df.reset_index(drop=True)
+    df.index += 1
+    df.index.name = "Rank"
+
+    # Add row: Miles Per Region
+    totals_per_region = ["Miles Per Region"]
+    row_values = list(df.sum(axis=0, numeric_only=True))
+    totals_per_region.extend(row_values)
+    df.loc[len(df.index)+1] = totals_per_region
+
+    # Export excel file
+    output_file = r"circumpolar.xlsx"
+    df.to_excel(output_file, index=1)
 
 
 def sort_files_by_region(name: str) -> List[str]:
