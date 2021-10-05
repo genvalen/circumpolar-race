@@ -43,6 +43,40 @@ def get_region_paths() -> Dict[int, str]:
     return region_url_dict
 
 
+def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
+    """Make HTTP request and, from the response, return the following
+    participant identifiers: first name, last name, gender, age, city, and state.
+    """
+    # Prepare parameters for the HTTP request.
+    url_base = "https://runsignup.com/Race/Results/95983/LookupParticipant/?"
+    result_id, user_id = href.split("=")[1].split("#U") #parse HREF query portion
+    result = f"resultSetId={result_id}&"
+    user = f"userId={user_id}#U{user_id}"
+    url = url_base+result+user
+    headers = {
+        "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0",
+        "Accept" : "application/json, */*; q=0.01",
+        "Accept-Language" : "en-US,en;q=0.5",
+        "X-Requested-With" : "XMLHttpRequest",
+        "Connection" : "keep-alive",
+        "Referer" : f"https://runsignup.com/Race/Results/95983/IndividualResult/?{result_id}",
+        "Cookie" : "winWidth=1680; _ga=GA1.2.279797247.1629283759; __atuvc=128%7C36%2C6%7C37%2C11%7C38%2C38%7C39%2C4%7C40; cookie_policy_accepted=T; analytics={\"asset\":\"a1ca985c-904e-459a-bfd7-7480afe5b588\",\"source\":1,\"medium\":1}; PHPSESSID=9r2ImrtyrSszLIsWF2YCV3widCfGI9RJ; _mkto_trk=id:350-KBZ-109&token:_mch-runsignup.com-1632559648074-71989; _gid=GA1.2.2082540081.1633160300; __atuvs=615a3572229b618f002"
+    }
+
+    # Make http request and return response as JSON obj.
+    resp = requests.get(url, headers=headers).json()
+
+    # Parse response and return relevant output.
+    try:
+        resp_dict = resp['participants'][0]
+        keys = ['first_name', 'last_name', 'gender', 'age', 'city', 'state']
+        data = tuple(resp_dict[k] for k in keys)
+    except:
+        data = {}
+
+    return data
+
+
 def get_participant_data() -> Tuple[str, Dict[int, Dict[str, float]], Tuple[str, str, str]]:
     """Return a tuple containing a set of participant names (first and last)
     and a dictionary of participants and mileage organized by region.
@@ -65,14 +99,13 @@ def get_participant_data() -> Tuple[str, Dict[int, Dict[str, float]], Tuple[str,
         # Scrape webpage for data for every participant in current region.
         for tag in soup.find_all(name="td"):
 
-            # This condition scrapes sex, age, in that order.
-            if str(tag.text).strip().isalnum():
-                tup.append(str(tag.text.strip()))
-
-            # This condition scrapes name, miles; Miles is the last data point
-            # needed before data-collecting for current participant ends.
+            # This condition scrapes name (not full), and miles, in that order.
+            # Name identifies the participant whose data is upcoming.
+            # Miles indicates all data for cur particpant had been scraped.
             # When miles, save dict where participant-> key, miles-> value,
-            # and save tuple containing name, gender, age for cur participant.
+            # and make HTTP request; response returns the following details:
+            # full name, gender, age, city, and state. (to be used for NER)
+
             if tag.a:
                 if "miles" in tag.a.text.lower():
                     # Update dict with participant mileage for cur region.
@@ -80,18 +113,21 @@ def get_participant_data() -> Tuple[str, Dict[int, Dict[str, float]], Tuple[str,
                     name = tup[0]
                     region_data[name] = miles
 
-                    # Store tuple of ID info.
-                    if len(tup) == 3:
+                    # Make API request to look-up particpant ID details.
+                    # Store tuple of details.
+                    if len(tup) == 4:
                         if tup[0] not in names:
-                            id_info.append(tuple(tup))
+                            identifiers = get_identifiers(tag.a['href'])
+                            id_info.append(tuple(identifiers))
+
                         tup.clear()
 
                     # Note: Name is scraped prior to miles, however, due to how
-                    # ID info is stored, we record it as "seen" at this point.
+                    # ID info is stored, we record it as "seen" here.
                     names.add(name)
 
                 else:
-                    name = tag.a.text.strip().strip('.')
+                    name = tag.a.text.strip().strip(".")
                     tup.append(name)
 
         data[region] = region_data
