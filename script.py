@@ -43,7 +43,7 @@ def get_region_paths() -> Dict[int, str]:
     return region_url_dict
 
 
-def get_participant_data() -> Tuple[str, Dict[int, Dict[str, float]]]:
+def get_participant_data() -> Tuple[str, Dict[int, Dict[str, float]], Tuple[str, str, str]]:
     """Return a tuple containing a set of participant names (first and last)
     and a dictionary of participants and mileage organized by region.
     """
@@ -52,26 +52,51 @@ def get_participant_data() -> Tuple[str, Dict[int, Dict[str, float]]]:
 
     data = {}
     names = set()
+    id_info = []
 
+    # Using `path` param, parse webpage of each region in the race (12 total).
     for region, path in region_url_dict.items():
         url = url_base + path
         soup = get_html(url)
-        region_data = {}
 
-        name = ""
+        region_data = {}
+        tup = []
+
+        # Scrape webpage for data for every participant in current region.
         for tag in soup.find_all(name="td"):
 
+            # This condition scrapes sex, age, in that order.
+            if str(tag.text).strip().isalnum():
+                tup.append(str(tag.text.strip()))
+
+            # This condition scrapes name, miles; Miles is the last data point
+            # needed before data-collecting for current participant ends.
+            # When miles, save dict where participant-> key, miles-> value,
+            # and save tuple containing name, gender, age for cur participant.
             if tag.a:
                 if "miles" in tag.a.text.lower():
-                    miles = float(tag.a.text.split()[0])
+                    # Update dict with participant mileage for cur region.
+                    miles = float(tag.a.text.lower().split()[0])
+                    name = tup[0]
                     region_data[name] = miles
+
+                    # Store tuple of ID info.
+                    if len(tup) == 3:
+                        if tup[0] not in names:
+                            id_info.append(tuple(tup))
+                        tup.clear()
+
+                    # Note: Name is scraped prior to miles, however, due to how
+                    # ID info is stored, we record it as "seen" at this point.
                     names.add(name)
+
                 else:
                     name = tag.a.text.strip().strip('.')
+                    tup.append(name)
 
         data[region] = region_data
 
-    return names, data
+    return names, data, id_info
 
 
 def get_dataframe():

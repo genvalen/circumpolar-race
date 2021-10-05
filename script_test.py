@@ -118,51 +118,82 @@ class TestScript(unittest.TestCase):
             expected
         )
 
-
     def test_get_participant_data_func(self):
-        expected = (
-            {'David E', 'Steven K', 'Zack L', 'Zachary L', 'Frank B', \
-                'Sketch D', 'Tim P', 'Ashley B', 'David R', 'Phil E', \
+        names, data, named_tups = script.get_participant_data()
+
+        results_to_test = [
+            # tuples contain two elements: given result, expected result.
+            (
+                names,
+                {
+                    'David E', 'Steven K', 'Zack L', 'Zachary L', 'Frank B', \
+                    'Sketch D', 'Tim P', 'Ashley B', 'David R', 'Phil E', \
                     'Salley H', 'Norm W', 'Joshua F', 'Connie K', 'Shawn R', \
-                        'James H', 'Micha S','David R', 'Chris H', 'Don W'
-            },
+                    'James H', 'Micha S','David R', 'Chris H', 'Don W'
+                }
+            ),
+            (
+                data,
+                {
+                    1: {
+                        'Connie K': 442.71, 'David R': 348.87, 'David E': 381.96,
+                        'Steven K': 149.36, 'Zachary L': 363.21,'Ashley B': 162.26,
+                        'Norm W': 91.25, 'Tim P': 250.75, 'Shawn R': 241.91,
+                        'Phil E': 79.743
+                        },
 
-            {
-                1: {
-                    'Connie K': 442.71, 'David R': 348.87, 'David E': 381.96,
-                    'Steven K': 149.36, 'Zachary L': 363.21,'Ashley B': 162.26,
-                    'Norm W': 91.25, 'Tim P': 250.75, 'Shawn R': 241.91,
-                    'Phil E': 79.743
-                    },
+                    11: {
+                        'Zack L': 294.77, 'Don W': 345.23, 'Connie K': 290.56,
+                        'David R': 376.09, 'David E': 422.12, 'Joshua F': 242.28,
+                        'Salley H': 359.25, 'James H': 85.21, 'Sketch D': 269.49
+                        },
 
-                11: {
-                    'Zack L': 294.77, 'Don W': 345.23, 'Connie K': 290.56,
-                    'David R': 376.09, 'David E': 422.12, 'Joshua F': 242.28,
-                    'Salley H': 359.25, 'James H': 85.21, 'Sketch D': 269.49
-                    },
+                    10: {
+                        'Zachary L': 311.39, 'Salley H': 350.61, 'Connie K': 248.56,
+                        'David R': 293.94, 'David E': 324.82, 'Joshua F': 407.1,
+                        'James H': 240.16, 'Don W': 296.29, 'Sketch D': 225.63
+                        },
 
-                10: {
-                    'Zachary L': 311.39, 'Salley H': 350.61, 'Connie K': 248.56,
-                    'David R': 293.94, 'David E': 324.82, 'Joshua F': 407.1,
-                    'James H': 240.16, 'Don W': 296.29, 'Sketch D': 225.63
-                    },
+                    9: {'Zachary L': 281.88, 'Connie K': 186.51, 'David R': 256.89, 'Salley H': 275.59, 'David E': 250.24, 'Don W': 291.48, 'Sketch D': 278.86, 'Joshua F': 308.57, 'James H': 188.98},
+                    8: {'Connie K': 272.41, 'David R': 195.3, 'Phil E': 10.24, 'Sketch D': 173.41, 'Salley H': 218.62, 'James H': 80.83, 'David E': 150.04, 'Don W': 221.49, 'Zachary L': 239.98, 'Joshua F': 98.68},
+                    7: {'Zack L': 233.36, 'Salley H': 278.68, 'Don W': 265.75, 'Joshua F': 61.08, 'Connie K': 436.63, 'Phil E': 48.604, 'David R': 188.13, 'David E': 236.28, 'Sketch D': 164.14, 'James H': 76.35},
+                    6: {'Zachary L': 250.66, 'Connie K': 408.6, 'Phil E': 47.38, 'Salley H': 287.52, 'Don W': 333.597, 'James H': 119.1, 'David E': 256.74, 'Joshua F': 116.4, 'David R': 227.29, 'Sketch D': 40.75},
+                    5: {'Zachary L': 283.47, 'Connie K': 470.31, 'Frank B': 255.67, 'Don W': 443.21, 'David R': 172.07, 'Salley H': 287.01, 'James H': 151.7, 'Sketch D': 199.29, 'Joshua F': 154.7, 'David E': 220.57},
+                    4: {'Zachary L': 355.02, 'Connie K': 611.71, 'David R': 227.06, 'James H': 209.25, 'Don W': 533.474, 'David E': 204.64, 'Joshua F': 247.23, 'Salley H': 487.7, 'Sketch D': 200.29, 'Micha S': 219.63},
+                    3: {'Zack L': 300.09, 'Connie K': 513.05, 'James H': 195.12, 'Don W': 447.329, 'Joshua F': 234.72, 'David E': 261.24, 'Salley H': 427.57, 'Chris H': 266.3, 'Sketch D': 236.83, 'David R': 290.85},
+                    2: {'Zachary L': 290.56, 'Connie K': 418.51, 'David R': 284.77, 'David E': 290.61, 'Ashley B': 242.43, 'Tim P': 206.16, 'Don W': 421.369, 'Chris H': 252.952, 'Salley H': 380.77, 'Sketch D': 305.89},
+                    12: {'Connie K': 14.06, 'Zack L': 271.38, 'David R': 301.25, 'David E': 379.11, 'Don W': 180.21, 'Sketch D': 193.55, 'James H': 138.35, 'Phil E': 96.554, 'Salley H': 345.73, 'Joshua F': 136.85}
+                }
+            ),
+            (
+                named_tups,
+                [
+                    ('Connie K', 'F', '54'),
+                    ('David R', 'M', '75'),
+                    ('David E', 'M', '50'),
+                    ('Steven K', 'M', '36'),
+                    ('Zachary L', 'M', '47'),
+                    ('Ashley B', 'F', '37'),
+                    ('Norm W', 'M', '58'),
+                    ('Tim P', 'M', '41'),
+                    ('Shawn R', 'M', '39'),
+                    ('Phil E', 'M', '58'),
+                    ('Zack L', 'M', '48'),
+                    ('Don W', 'M', '55'),
+                    ('Joshua F', 'M', '33'),
+                    ('Salley H', 'F', '55'),
+                    ('James H', 'M', '49'),
+                    ('Sketch D', 'M', '43'),
+                    ('Frank B', 'M', '76'),
+                    ('Micha S', 'F', '49'),
+                    ('Chris H', 'M', '36')
+                ]
+            )
+        ]
 
-                9: {'Zachary L': 281.88, 'Connie K': 186.51, 'David R': 256.89, 'Salley H': 275.59, 'David E': 250.24, 'Don W': 291.48, 'Sketch D': 278.86, 'Joshua F': 308.57, 'James H': 188.98},
-                8: {'Connie K': 272.41, 'David R': 195.3, 'Phil E': 10.24, 'Sketch D': 173.41, 'Salley H': 218.62, 'James H': 80.83, 'David E': 150.04, 'Don W': 221.49, 'Zachary L': 239.98, 'Joshua F': 98.68},
-                7: {'Zack L': 233.36, 'Salley H': 278.68, 'Don W': 265.75, 'Joshua F': 61.08, 'Connie K': 436.63, 'Phil E': 48.604, 'David R': 188.13, 'David E': 236.28, 'Sketch D': 164.14, 'James H': 76.35},
-                6: {'Zachary L': 250.66, 'Connie K': 408.6, 'Phil E': 47.38, 'Salley H': 287.52, 'Don W': 333.597, 'James H': 119.1, 'David E': 256.74, 'Joshua F': 116.4, 'David R': 227.29, 'Sketch D': 40.75},
-                5: {'Zachary L': 283.47, 'Connie K': 470.31, 'Frank B': 255.67, 'Don W': 443.21, 'David R': 172.07, 'Salley H': 287.01, 'James H': 151.7, 'Sketch D': 199.29, 'Joshua F': 154.7, 'David E': 220.57},
-                4: {'Zachary L': 355.02, 'Connie K': 611.71, 'David R': 227.06, 'James H': 209.25, 'Don W': 533.474, 'David E': 204.64, 'Joshua F': 247.23, 'Salley H': 487.7, 'Sketch D': 200.29, 'Micha S': 219.63},
-                3: {'Zack L': 300.09, 'Connie K': 513.05, 'James H': 195.12, 'Don W': 447.329, 'Joshua F': 234.72, 'David E': 261.24, 'Salley H': 427.57, 'Chris H': 266.3, 'Sketch D': 236.83, 'David R': 290.85},
-                2: {'Zachary L': 290.56, 'Connie K': 418.51, 'David R': 284.77, 'David E': 290.61, 'Ashley B': 242.43, 'Tim P': 206.16, 'Don W': 421.369, 'Chris H': 252.952, 'Salley H': 380.77, 'Sketch D': 305.89},
-                12: {'Connie K': 14.06, 'Zack L': 271.38, 'David R': 301.25, 'David E': 379.11, 'Don W': 180.21, 'Sketch D': 193.55, 'James H': 138.35, 'Phil E': 96.554, 'Salley H': 345.73, 'Joshua F': 136.85}
-            }
-        )
-
-        self.assertTupleEqual(
-            script.get_participant_data(),
-            expected
-        )
+        with self.subTest(self):
+            for result, expected in results_to_test:
+                self.assertEqual(result, expected)
 
 
 if __name__ == '__main__':
