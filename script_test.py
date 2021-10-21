@@ -172,6 +172,16 @@ class TestScript(unittest.TestCase):
         )
 
 
+    def test_get_miles_func(self):
+        path = "/Race/Results/95983/IndividualResult/?resultSetId=212380#U44542375"
+        expected = 442.71
+
+        self.assertEqual(
+            script.get_miles(path),
+            expected
+        )
+
+
     def test_get_participant_data_func(self):
         participant_names, monthly_mileage_results, participant_identifiers \
         = script.get_participant_data()

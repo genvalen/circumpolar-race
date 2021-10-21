@@ -78,6 +78,42 @@ def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
     return data
 
 
+def get_miles(href: str) -> float:
+    """Make HTTP request and, from the response, return the total miles tallied
+    for specified participant at the end of the region.
+    """
+    url_schema = "https://runsignup.com"
+    url = url_schema + href
+    result_id, user_id = href.split("=")[1].split("#U") #parse HREF query
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0",
+        "Accept" : "application/json, */*; q=0.01",
+        "Accept-Language" : "en-US,en;q=0.5",
+        "Content-Type" : "application/x-www-form-urlencoded; charset=UTF-8",
+
+        "X-Requested-With" : "XMLHttpRequest",
+        "Origin": "https://runsignup.com",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Referer": f"https://runsignup.com/Race/Results/95983/IndividualResult/?resultSetId={result_id}",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site" : "same-origin",
+        "TE" : "trailers"
+    }
+
+    data = f"userIdCsv={user_id}"
+    resp = requests.post(url, headers=headers, data=data)
+
+    try:
+        miles = resp.json()['results'][0]['result_tally_value']
+    except:
+        miles = None
+
+    return miles
+
+
 def get_participant_data() -> Tuple[
     Set[str],
     Dict[int, Dict[str, float]],
@@ -121,9 +157,8 @@ def get_participant_data() -> Tuple[
             if tag.a:
                 if "miles" in tag.a.text.lower():
                     # Update dict with participant mileage for cur region.
-                    miles = float(tag.a.text.lower().split()[0])
                     participant = tup[0]
-                    region_results[participant] = miles
+                    region_results[participant] = get_miles(tag.a['href'])
 
                     # Make API request to look-up particpant ID details.
                     # Store tuple of details.
