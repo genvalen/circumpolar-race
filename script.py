@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Set
 import utils.writer as write
 import pandas as pd
 import glob
@@ -47,7 +47,7 @@ def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
     """Make HTTP request and, from the response, return the following
     participant identifiers: first name, last name, gender, age, city, and state.
     """
-    # Prepare parameters for the HTTP request.
+    # Prepare URL and header parameters for the HTTP request.
     url_base = "https://runsignup.com/Race/Results/95983/LookupParticipant/?"
     result_id, user_id = href.split("=")[1].split("#U") #parse HREF query portion
     result = f"resultSetId={result_id}&"
@@ -63,12 +63,13 @@ def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
         "Cookie" : "winWidth=1680; _ga=GA1.2.279797247.1629283759; __atuvc=128%7C36%2C6%7C37%2C11%7C38%2C38%7C39%2C4%7C40; cookie_policy_accepted=T; analytics={\"asset\":\"a1ca985c-904e-459a-bfd7-7480afe5b588\",\"source\":1,\"medium\":1}; PHPSESSID=9r2ImrtyrSszLIsWF2YCV3widCfGI9RJ; _mkto_trk=id:350-KBZ-109&token:_mch-runsignup.com-1632559648074-71989; _gid=GA1.2.2082540081.1633160300; __atuvs=615a3572229b618f002"
     }
 
-    # Make http request and return response as JSON obj.
-    resp = requests.get(url, headers=headers).json()
+    # Make HTTP request.
+    resp = requests.get(url, headers=headers)
 
-    # Parse response and return relevant output.
+    # Convert response to JSON obj and parse relevant output.
+    # If error, return empty dictionary.
     try:
-        resp_dict = resp['participants'][0]
+        resp_dict = resp.json()['participants'][0]
         keys = ['first_name', 'last_name', 'gender', 'age', 'city', 'state']
         data = tuple(resp_dict[k] for k in keys)
     except:
@@ -77,23 +78,34 @@ def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
     return data
 
 
-def get_participant_data() -> Tuple[str, Dict[int, Dict[str, float]], Tuple[str, str, str]]:
-    """Return a tuple containing a set of participant names (first and last)
-    and a dictionary of participants and mileage organized by region.
+def get_participant_data() -> Tuple[
+    Set[str],
+    Dict[int, Dict[str, float]],
+    Tuple[str]
+]:
+    """Return a tuple containing 3 items:
+        1) a set of participants' full names
+
+        2) a dict of participant race results where the key is region number
+            and the value is a dict of participants (k) and mileage (v)
+            for that region.
+
+        3) a list of tuples where each tuple contains participant identifers:
+            name, gender, and age
     """
     url_base = "https://runsignup.com"
     region_url_dict = get_region_paths()
 
-    data = {}
-    names = set()
-    id_info = []
+    race_results = {}
+    participant_names = set()
+    participant_identifiers = []
 
     # Using `path` param, parse webpage of each region in the race (12 total).
     for region, path in region_url_dict.items():
         url = url_base + path
         soup = get_html(url)
 
-        region_data = {}
+        region_results = {}
         tup = []
 
         # Scrape webpage for data for every participant in current region.
@@ -110,29 +122,29 @@ def get_participant_data() -> Tuple[str, Dict[int, Dict[str, float]], Tuple[str,
                 if "miles" in tag.a.text.lower():
                     # Update dict with participant mileage for cur region.
                     miles = float(tag.a.text.lower().split()[0])
-                    name = tup[0]
-                    region_data[name] = miles
+                    participant = tup[0]
+                    region_results[participant] = miles
 
                     # Make API request to look-up particpant ID details.
                     # Store tuple of details.
                     if len(tup) == 4:
-                        if tup[0] not in names:
+                        if tup[0] not in participant_names:
                             identifiers = get_identifiers(tag.a['href'])
-                            id_info.append(tuple(identifiers))
+                            participant_identifiers.append(tuple(identifiers))
 
                         tup.clear()
 
                     # Note: Name is scraped prior to miles, however, due to how
                     # ID info is stored, we record it as "seen" here.
-                    names.add(name)
+                    participant_names.add(participant)
 
                 else:
-                    name = tag.a.text.strip().strip(".")
-                    tup.append(name)
+                    participant = tag.a.text.strip().strip(".")
+                    tup.append(participant)
 
-        data[region] = region_data
+        race_results[region] = region_results
 
-    return names, data, id_info
+    return participant_names, race_results, participant_identifiers
 
 
 def get_dataframe():
