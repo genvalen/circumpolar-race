@@ -97,10 +97,6 @@ def get_miles(href: str) -> float:
         "DNT": "1",
         "Connection": "keep-alive",
         "Referer": f"https://runsignup.com/Race/Results/95983/IndividualResult/?resultSetId={result_id}",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site" : "same-origin",
-        "TE" : "trailers"
     }
 
     data = f"userIdCsv={user_id}"
@@ -133,57 +129,60 @@ def get_participant_data() -> Tuple[
     region_url_dict = get_region_paths()
 
     race_results = {}
-    participant_names = set()
     participant_identifiers = []
 
-    # Using `path` param, parse webpage of each region in the race (12 total).
+    # Save scraped version of particpants' names and map them to full names
+    # (eg., Carol G --> Carol Grant).
+    # Incomplete names are scraped from website's HTML.
+    # Full names are returned by `get_identifiers` in an HTTP request.
+    # Saving names ensures HTTP call is made only once per participant
+    # while still giving program access to full names as often as needed.
+
+    participants_seen = {}
+
+    # Iterate through designated webpage for each region in the race (12).
     for region, path in region_url_dict.items():
         url = url_base + path
         soup = get_html(url)
 
         region_results = {}
-        tup = []
 
-        # Scrape webpage for data for every participant in current region.
-        for tag in soup.find_all(name="td"):
+        # Iterate through each particpant in the current region.
+        # Scrape name and HREF for each.
+        # HREF - used in HTTP call returning participant's data for cur region.
+        # Name - used w/ `participants_seen` to prevent over-use of HTTP calls.
+        for tag in soup.find_all("a", class_="rsuBtn rsuBtn--text-whitebg rsuBtn--xs margin-r-0"):
+            href = tag['href']
+            name = tag.text.strip() # incomplete name -> first name/last initial
 
-            # This condition scrapes name (not full), and miles, in that order.
-            # Name identifies the participant whose data is upcoming.
-            # Miles indicates all data for cur particpant had been scraped.
-            # When miles, save dict where participant-> key, miles-> value,
-            # and make HTTP request; response returns the following details:
-            # full name, gender, age, city, and state. (to be used for NER)
+            if name not in participants_seen:
 
-            if tag.a:
-                if "miles" in tag.a.text.lower():
-                    # Update dict with participant mileage for cur region.
-                    participant = tup[0]
-                    region_results[participant] = get_miles(tag.a['href'])
+                # Make HTTP call returning: full name, age, gender, city.
+                identifiers = get_identifiers(href)
 
-                    # Make API request to look-up particpant ID details.
-                    # Store tuple of details.
-                    if len(tup) == 4:
-                        if tup[0] not in participant_names:
-                            identifiers = get_identifiers(tag.a['href'])
-                            participant_identifiers.append(tuple(identifiers))
+                # Store identifiers for entity resolution.
+                participant_identifiers.append(tuple(identifiers))
 
-                        tup.clear()
+                # Update dict of participants seen.
+                full_name = " ".join(identifiers[:2]) # full name
+                participants_seen[name] = full_name
 
-                    # Note: Name is scraped prior to miles, however, due to how
-                    # ID info is stored, we record it as "seen" here.
-                    participant_names.add(participant)
+            # Make HTTP call returning: total miles
+            # Update region_results with participant's total miles.
+            full_name = participants_seen[name]
+            region_results[full_name] = get_miles(href)
 
-                else:
-                    participant = tag.a.text.strip().strip(".")
-                    tup.append(participant)
-
+        # Update overall race results with results from current region.
         race_results[region] = region_results
+
+    # Create set of full names of participants in the race
+    participant_names = set(participants_seen.values())
 
     return participant_names, race_results, participant_identifiers
 
 
 def get_dataframe():
-    names, src_data = get_participant_data()
+    names, src_data, _ = get_participant_data()
     names = sorted(list(names))
 
     data = defaultdict(list)
@@ -406,3 +405,5 @@ if __name__ == '__main__':
     # Export df as a CSV file
     output_file = r"circumpolar-race-results.csv"
     df.to_csv(output_file, index=1)
+
+    get_dataframe()
