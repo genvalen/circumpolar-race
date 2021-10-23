@@ -82,6 +82,7 @@ def get_miles(href: str) -> float:
     """Make HTTP request and, from the response, return the total miles tallied
     for specified participant at the end of the region.
     """
+   # Prepare URL and header parameters for the HTTP request.
     url_schema = "https://runsignup.com"
     url = url_schema + href
     result_id, user_id = href.split("=")[1].split("#U") #parse HREF query
@@ -91,17 +92,20 @@ def get_miles(href: str) -> float:
         "Accept" : "application/json, */*; q=0.01",
         "Accept-Language" : "en-US,en;q=0.5",
         "Content-Type" : "application/x-www-form-urlencoded; charset=UTF-8",
-
         "X-Requested-With" : "XMLHttpRequest",
-        "Origin": "https://runsignup.com",
         "DNT": "1",
         "Connection": "keep-alive",
         "Referer": f"https://runsignup.com/Race/Results/95983/IndividualResult/?resultSetId={result_id}",
     }
 
+    # Prepare data for HTTP request.
     data = f"userIdCsv={user_id}"
+
+    # Make HTTP request.
     resp = requests.post(url, headers=headers, data=data)
 
+    # Convert response into JSON obj and parse for relevent output.
+    # If error, return `None`.
     try:
         miles = resp.json()['results'][0]['result_tally_value']
     except:
