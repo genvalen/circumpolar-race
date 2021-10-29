@@ -1,11 +1,11 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Set
 import utils.writer as write
 import pandas as pd
 import glob
 from bs4 import BeautifulSoup
 import requests
-import re
-from selenium import webdriver
+from collections import defaultdict
+
 
 def get_html(url="https://runsignup.com/RaceGroups" \
         "/95983?groupName=In+Jesper%27s+Footsteps"
@@ -43,55 +43,191 @@ def get_region_paths() -> Dict[int, str]:
     return region_url_dict
 
 
-def get_participant_data() -> Tuple[str, Dict[int, Dict[str, float]]]:
-    """Return a tuple containing a set of participant names (first and last)
-    and a dictionary of participants and mileage organized by region.
+def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
+    """Make HTTP request and, from the response, return the following
+    participant identifiers: first name, last name, gender, age, city, and state.
+    """
+    # Prepare URL and header parameters for the HTTP request.
+    url_base = "https://runsignup.com/Race/Results/95983/LookupParticipant/?"
+    result_id, user_id = href.split("=")[1].split("#U") #parse HREF query portion
+    result = f"resultSetId={result_id}&"
+    user = f"userId={user_id}#U{user_id}"
+    url = url_base+result+user
+    headers = {
+        "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0",
+        "Accept" : "application/json, */*; q=0.01",
+        "Accept-Language" : "en-US,en;q=0.5",
+        "X-Requested-With" : "XMLHttpRequest",
+        "Connection" : "keep-alive",
+        "Referer" : f"https://runsignup.com/Race/Results/95983/IndividualResult/?{result_id}",
+        "Cookie" : "winWidth=1680; _ga=GA1.2.279797247.1629283759; __atuvc=128%7C36%2C6%7C37%2C11%7C38%2C38%7C39%2C4%7C40; cookie_policy_accepted=T; analytics={\"asset\":\"a1ca985c-904e-459a-bfd7-7480afe5b588\",\"source\":1,\"medium\":1}; PHPSESSID=9r2ImrtyrSszLIsWF2YCV3widCfGI9RJ; _mkto_trk=id:350-KBZ-109&token:_mch-runsignup.com-1632559648074-71989; _gid=GA1.2.2082540081.1633160300; __atuvs=615a3572229b618f002"
+    }
+
+    # Make HTTP request.
+    resp = requests.get(url, headers=headers)
+
+    # Convert response to JSON obj and parse relevant output.
+    # If error, return empty dictionary.
+    try:
+        resp_dict = resp.json()['participants'][0]
+        keys = ['first_name', 'last_name', 'gender', 'age', 'city', 'state']
+        data = tuple(resp_dict[k] for k in keys)
+    except:
+        data = {}
+
+    return data
+
+
+def get_miles(href: str) -> float:
+    """Make HTTP request and, from the response, return the total miles tallied
+    for specified participant at the end of the region.
+    """
+   # Prepare URL and header parameters for the HTTP request.
+    url_schema = "https://runsignup.com"
+    url = url_schema + href
+    result_id, user_id = href.split("=")[1].split("#U") #parse HREF query
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0",
+        "Accept" : "application/json, */*; q=0.01",
+        "Accept-Language" : "en-US,en;q=0.5",
+        "Content-Type" : "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With" : "XMLHttpRequest",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Referer": f"https://runsignup.com/Race/Results/95983/IndividualResult/?resultSetId={result_id}",
+    }
+
+    # Prepare data for HTTP request.
+    data = f"userIdCsv={user_id}"
+
+    # Make HTTP request.
+    resp = requests.post(url, headers=headers, data=data)
+
+    # Convert response into JSON obj and parse for relevent output.
+    # If error, return `None`.
+    try:
+        miles = resp.json()['results'][0]['result_tally_value']
+    except:
+        miles = None
+
+    return miles
+
+
+def get_participant_data() -> Tuple[
+    Set[str],
+    Dict[int, Dict[str, float]],
+    Tuple[str]
+]:
+    """Return a tuple containing 3 items:
+        1) a set of participants' full names
+
+        2) a dict of participant race results where the key is region number
+            and the value is a dict of participants (k) and mileage (v)
+            for that region.
+
+        3) a list of tuples where each tuple contains participant identifers:
+            name, gender, and age
     """
     url_base = "https://runsignup.com"
     region_url_dict = get_region_paths()
 
-    data = {}
-    names = set()
+    race_results = {}
+    participant_identifiers = []
 
+    # Save scraped version of particpants' names and map them to full names
+    # (eg., Carol G --> Carol Grant).
+    # Incomplete names are scraped from website's HTML.
+    # Full names are returned by `get_identifiers` in an HTTP request.
+    # Saving names ensures HTTP call is made only once per participant
+    # while still giving program access to full names as often as needed.
+
+    participants_seen = {}
+
+    # Iterate through designated webpage for each region in the race (12).
     for region, path in region_url_dict.items():
         url = url_base + path
         soup = get_html(url)
-        region_data = {}
 
-        name = ""
-        for tag in soup.find_all(name="a", \
-            class_="rsuBtn rsuBtn--text-whitebg rsuBtn--xs margin-r-0"):
-            
-            url = url_base + tag['href']
-            soup2 = get_html(url)
-            print("---------------------------------")
+        region_results = {}
 
-            payload = {}
-            headers = {}
-            response = requests.request("GET", url, headers=headers, data = payload)
-            
-            for t in soup2.find_all(name="span", class_="data"):
-                print()
-                print(t)
+        # Iterate through each particpant in the current region.
+        # Scrape name and HREF for each.
+        # HREF - used in HTTP call returning participant's data for cur region.
+        # Name - used w/ `participants_seen` to prevent over-use of HTTP calls.
+        for tag in soup.find_all("a", class_="rsuBtn rsuBtn--text-whitebg rsuBtn--xs margin-r-0"):
+            href = tag['href']
+            name = tag.text.strip() # incomplete name -> first name/last initial
+
+            if name not in participants_seen:
+
+                # Make HTTP call returning: full name, age, gender, city.
+                identifiers = get_identifiers(href)
+
+                # Store identifiers for entity resolution.
+                participant_identifiers.append(tuple(identifiers))
+
+                # Update dict of participants seen.
+                full_name = " ".join(identifiers[:2]) # full name
+                participants_seen[name] = full_name
+
+            # Make HTTP call returning: total miles
+            # Update region_results with participant's total miles.
+            full_name = participants_seen[name]
+            region_results[full_name] = get_miles(href)
+
+        # Update overall race results with results from current region.
+        race_results[region] = region_results
+
+    # Create set of full names of participants in the race
+    participant_names = set(participants_seen.values())
+
+    return participant_names, race_results, participant_identifiers
 
 
+def get_dataframe():
+    names, src_data, _ = get_participant_data()
+    names = sorted(list(names))
 
-            # print(url, end='\n')
+    data = defaultdict(list)
 
+    data["Team Member"].extend(names)
 
+    # add row of data for each participant in `names`
+    # region is key, list of miles logged per region is value
+    for name in names:
+        for region in range(1,13):
+            col = "Region {}".format(str(region))
 
+            if name in src_data[region]:
+                data[col].append(src_data[region][name])
+            else:
+                data[col].append(0)
 
-            # if tag.a:
-            #     if "miles" in tag.a.text.lower():
-            #         miles = float(tag.a.text.split()[0])
-            #         region_data[name] = miles
-            #         names.add(name)
-            #     else:
-            #         name = tag.a.text.strip().strip('.')
+    df = pd.DataFrame(data)
 
-        # data[region] = region_data
+    # Add column: Total Mileage
+    df['Total Mileage'] = df.loc[:].sum(axis=1, numeric_only=True)
 
-    # return names, data
+    # Sort results by Total Mileage column
+    df = df.sort_values(by='Total Mileage', ascending=False)
+
+    # Reset indices
+    df = df.reset_index(drop=True)
+    df.index += 1
+    df.index.name = "Rank"
+
+    # Add row: Miles Per Region
+    totals_per_region = ["Miles Per Region"]
+    row_values = list(df.sum(axis=0, numeric_only=True))
+    totals_per_region.extend(row_values)
+    df.loc[len(df.index)+1] = totals_per_region
+
+    # Export excel file
+    output_file = r"circumpolar.xlsx"
+    df.to_excel(output_file, index=1)
+
+    print("An Excel spreadsheet has been exported.")
 
 
 def sort_files_by_region(name: str) -> List[str]:
@@ -268,19 +404,12 @@ if __name__ == '__main__':
     # add row totals
     df.loc[len(df.index)+1] = row_total
 
-    # Export df as an Excel file
-    output_file = r"circumpolar-race-results.xlsx"
-    df.to_excel(output_file, index=1)
+    # # Export df as an Excel file
+    # output_file = r"circumpolar-race-results.xlsx"
+    # df.to_excel(output_file, index=1)
 
-    # Export df as a CSV file
-    output_file = r"circumpolar-race-results.csv"
-    df.to_csv(output_file, index=1)
-    # get_participant_data()
-    URL = "https://runsignup.com/Race/Results/95983/IndividualResult/?resultSetId=212380#U44542375"
-    name= "https://runsignup.com/Race/Results/95983/LookupParticipant/?resultSetId=212380&userId=44542375#U44542375"
-    auth ="AIzaSyCfJWZshhNwB8Vrm13dSQGO8w3aRjUCgjE"
-    headers = {}
-    payload = {}
-    r = requests.get("https://analytics.runsignup.com/prod/streams/analytics/event", auth=auth)
-    # print(r.text)
-    params = "resultSetId=212380"
+    # # Export df as a CSV file
+    # output_file = r"circumpolar-race-results.csv"
+    # df.to_csv(output_file, index=1)
+
+    get_dataframe()

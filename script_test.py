@@ -1,8 +1,11 @@
 import unittest
 from unittest.case import skip
 import script
+import requests
 
 class TestScript(unittest.TestCase):
+    maxDiff = None # make failing tests easier to debug
+
     def test_that_files_are_properly_sorted_by_region(self): 
         expected = [   
             "participants/connie-karras/20210829-Region1Running_Karras_loggedActivities.csv",
@@ -22,6 +25,7 @@ class TestScript(unittest.TestCase):
             script.sort_files_by_region("Connie Karras"), 
             expected
         )
+
 
     def test_that_files_are_properly_sorted_by_region2(self):
         expected = [   
@@ -92,10 +96,13 @@ class TestScript(unittest.TestCase):
             script.format_participant_data("Joshua Fosberg", data), 
             expected
         )
+
+
     @skip
     def test_that_total_milleage_is_calculated_well(self):
         expected = 4310.31
         # self.assertEqual()
+
 
     def test_get_region_paths_func(self):
         expected = {
@@ -119,51 +126,279 @@ class TestScript(unittest.TestCase):
         )
 
 
-    def test_get_participant_data_func(self):
-        expected = (
-            {'David E', 'Steven K', 'Zack L', 'Zachary L', 'Frank B', \
-                'Sketch D', 'Tim P', 'Ashley B', 'David R', 'Phil E', \
-                    'Salley H', 'Norm W', 'Joshua F', 'Connie K', 'Shawn R', \
-                        'James H', 'Micha S','David R', 'Chris H', 'Don W'
-            },
+    @skip("WIP")
+    def test_api_call(self):
+        url = "https://runsignup.com/Race/Results/95983/LookupParticipant/?resultSetId=212380&userId=44542375#U44542375"
+        headers = {
+            'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0',
+            'Accept' : 'application/json, */*; q=0.01',
+            'Accept-Language' : 'en-US,en;q=0.5',
+            'X-Requested-With' : 'XMLHttpRequest',
+            'Connection' : 'keep-alive',
+            'Referer' : f'https://runsignup.com/Race/Results/95983/IndividualResult/?resultSetId=212380',
+            'Cookie' : 'winWidth=1680; _ga=GA1.2.279797247.1629283759; __atuvc=128%7C36%2C6%7C37%2C11%7C38%2C38%7C39%2C4%7C40; cookie_policy_accepted=T; analytics={"asset":"a1ca985c-904e-459a-bfd7-7480afe5b588","source":1,"medium":1}; PHPSESSID=9r2ImrtyrSszLIsWF2YCV3widCfGI9RJ; _mkto_trk=id:350-KBZ-109&token:_mch-runsignup.com-1632559648074-71989; _gid=GA1.2.2082540081.1633160300; __atuvs=615a3572229b618f002',
+        }
 
-            {
-                1: {
-                    'Connie K': 442.71, 'David R': 348.87, 'David E': 381.96,
-                    'Steven K': 149.36, 'Zachary L': 363.21,'Ashley B': 162.26,
-                    'Norm W': 91.25, 'Tim P': 250.75, 'Shawn R': 241.91,
-                    'Phil E': 79.743
-                    },
+        expected = {
+            "participants":[
+                {
+                    "user_id":44542375,
+                    "first_name":"Connie",
+                    "last_name":"Karras",
+                    "event_id":420484,
+                    "event":"Region 1 - Running",
+                    "bib_num":"2164",
+                    "profile_filename_url":None,
+                    "registration_id":45016484,
+                    "digitalBibUrl":"/Race\/Public\/Certificates\/PreRaceBib\/CHH\/AnywhereAnyPlace\/CircumpolarRaceAroundtheWorld?registrationId=45016484",
+                    "gender":"F",
+                    "age":54,
+                    "city":"Munster",
+                    "state":"IN"
+                }
+            ]
+        }
 
-                11: {
-                    'Zack L': 294.77, 'Don W': 345.23, 'Connie K': 290.56,
-                    'David R': 376.09, 'David E': 422.12, 'Joshua F': 242.28,
-                    'Salley H': 359.25, 'James H': 85.21, 'Sketch D': 269.49
-                    },
+        self.assertEqual(requests.get(url, headers=headers).json(), expected)
 
-                10: {
-                    'Zachary L': 311.39, 'Salley H': 350.61, 'Connie K': 248.56,
-                    'David R': 293.94, 'David E': 324.82, 'Joshua F': 407.1,
-                    'James H': 240.16, 'Don W': 296.29, 'Sketch D': 225.63
-                    },
 
-                9: {'Zachary L': 281.88, 'Connie K': 186.51, 'David R': 256.89, 'Salley H': 275.59, 'David E': 250.24, 'Don W': 291.48, 'Sketch D': 278.86, 'Joshua F': 308.57, 'James H': 188.98},
-                8: {'Connie K': 272.41, 'David R': 195.3, 'Phil E': 10.24, 'Sketch D': 173.41, 'Salley H': 218.62, 'James H': 80.83, 'David E': 150.04, 'Don W': 221.49, 'Zachary L': 239.98, 'Joshua F': 98.68},
-                7: {'Zack L': 233.36, 'Salley H': 278.68, 'Don W': 265.75, 'Joshua F': 61.08, 'Connie K': 436.63, 'Phil E': 48.604, 'David R': 188.13, 'David E': 236.28, 'Sketch D': 164.14, 'James H': 76.35},
-                6: {'Zachary L': 250.66, 'Connie K': 408.6, 'Phil E': 47.38, 'Salley H': 287.52, 'Don W': 333.597, 'James H': 119.1, 'David E': 256.74, 'Joshua F': 116.4, 'David R': 227.29, 'Sketch D': 40.75},
-                5: {'Zachary L': 283.47, 'Connie K': 470.31, 'Frank B': 255.67, 'Don W': 443.21, 'David R': 172.07, 'Salley H': 287.01, 'James H': 151.7, 'Sketch D': 199.29, 'Joshua F': 154.7, 'David E': 220.57},
-                4: {'Zachary L': 355.02, 'Connie K': 611.71, 'David R': 227.06, 'James H': 209.25, 'Don W': 533.474, 'David E': 204.64, 'Joshua F': 247.23, 'Salley H': 487.7, 'Sketch D': 200.29, 'Micha S': 219.63},
-                3: {'Zack L': 300.09, 'Connie K': 513.05, 'James H': 195.12, 'Don W': 447.329, 'Joshua F': 234.72, 'David E': 261.24, 'Salley H': 427.57, 'Chris H': 266.3, 'Sketch D': 236.83, 'David R': 290.85},
-                2: {'Zachary L': 290.56, 'Connie K': 418.51, 'David R': 284.77, 'David E': 290.61, 'Ashley B': 242.43, 'Tim P': 206.16, 'Don W': 421.369, 'Chris H': 252.952, 'Salley H': 380.77, 'Sketch D': 305.89},
-                12: {'Connie K': 14.06, 'Zack L': 271.38, 'David R': 301.25, 'David E': 379.11, 'Don W': 180.21, 'Sketch D': 193.55, 'James H': 138.35, 'Phil E': 96.554, 'Salley H': 345.73, 'Joshua F': 136.85}
-            }
-        )
+    def test_get_identifiers_func(self):
+        path = '/Race/Results/95983/IndividualResult/?resultSetId=212380#U44542375'
+        expected = ('Connie', 'Karras', 'F', 54, 'Munster', 'IN')
 
-        self.assertTupleEqual(
-            script.get_participant_data(),
+        self.assertEqual(
+            script.get_identifiers(path),
             expected
         )
 
 
-if __name__ == "__main__":
+    def test_get_miles_func(self):
+        path = "/Race/Results/95983/IndividualResult/?resultSetId=212380#U44542375"
+        expected = 442.71
+
+        self.assertEqual(
+            script.get_miles(path),
+            expected
+        )
+
+
+    def test_get_participant_data_func(self):
+        participant_names, monthly_mileage_results, participant_identifiers \
+        = script.get_participant_data()
+
+        results_to_test = [
+            # tuples contain two elements: given result, expected result.
+            (
+                participant_names,
+                {
+                    'David Eckardt',
+                    'Steven Kornhaus',
+                    'Zack Lever',
+                    'Zachary Lever',
+                    'Frank Bozanich',
+                    'Sketch Ditty',
+                    'Tim Post',
+                    'Ashley Blake',
+                    'David Ralston',
+                    'Phil Essam',
+                    'Salley Hernandez',
+                    'Norm Williams',
+                    'Joshua Fosberg',
+                    'Connie Karras',
+                    'Shawn Roberts',
+                    'James Huller',
+                    'Micha Shines',
+                    'Chris Head',
+                    'Don Willis'
+                }
+            ),
+            (
+                monthly_mileage_results,
+                {
+                    1: {
+                            'Connie Karras': 442.71,
+                            'David Ralston': 348.87,
+                            'David Eckardt': 381.96,
+                            'Steven Kornhaus': 149.36,
+                            'Zachary Lever': 363.21,
+                            'Ashley Blake': 162.26,
+                            'Norm Williams': 91.25,
+                            'Tim Post': 250.75,
+                            'Shawn Roberts': 241.91,
+                            'Phil Essam': 79.743
+                        },
+
+                    11: {
+                            'Zack Lever': 294.77,
+                            'Don Willis': 345.23,
+                            'Connie Karras': 290.56,
+                            'David Ralston': 376.09,
+                            'David Eckardt': 422.12,
+                            'Joshua Fosberg': 242.28,
+                            'Salley Hernandez': 359.25,
+                            'James Huller': 85.21,
+                            'Sketch Ditty': 269.49
+                        },
+
+                    10: {
+                            'Zachary Lever': 311.39,
+                            'Salley Hernandez': 350.61,
+                            'Connie Karras': 248.56,
+                            'David Ralston': 293.94,
+                            'David Eckardt': 324.82,
+                            'Joshua Fosberg': 407.1,
+                            'James Huller': 240.16,
+                            'Don Willis': 296.29,
+                            'Sketch Ditty': 225.63
+                        },
+
+                    9: {
+                            'Zachary Lever': 281.88,
+                            'Connie Karras': 186.51,
+                            'David Ralston': 256.89,
+                            'Salley Hernandez': 275.59,
+                            'David Eckardt': 250.24,
+                            'Don Willis': 291.48,
+                            'Sketch Ditty': 278.86,
+                            'Joshua Fosberg': 308.57,
+                            'James Huller': 188.98
+                        },
+
+                    8: {
+                            'Connie Karras': 272.41,
+                            'David Ralston': 195.3,
+                            'Phil Essam': 10.24,
+                            'Sketch Ditty': 173.41,
+                            'Salley Hernandez': 218.62,
+                            'James Huller': 80.83,
+                            'David Eckardt': 150.04,
+                            'Don Willis': 221.49,
+                            'Zachary Lever': 239.98,
+                            'Joshua Fosberg': 98.68
+                        },
+                        
+                    7: {
+                            'Zack Lever': 233.36,
+                            'Salley Hernandez': 278.68,
+                            'Don Willis': 265.75,
+                            'Joshua Fosberg': 61.08,
+                            'Connie Karras': 436.63,
+                            'Phil Essam': 48.604,
+                            'David Ralston': 188.13,
+                            'David Eckardt': 236.28,
+                            'Sketch Ditty': 164.14,
+                            'James Huller': 76.35
+                        },
+
+                    6: {
+                            'Zachary Lever':250.66,
+                            'Connie Karras': 408.6,
+                            'Phil Essam': 47.38,
+                            'Salley Hernandez': 287.52,
+                            'Don Willis': 333.597,
+                            'James Huller': 119.1,
+                            'David Eckardt': 256.74,
+                            'Joshua Fosberg': 116.4,
+                            'David Ralston': 227.29,
+                            'Sketch Ditty': 40.75
+                        },
+
+                    5: {
+                            'Zachary Lever': 283.47,
+                            'Connie Karras': 470.31,
+                            'Frank Bozanich': 255.67,
+                            'Don Willis': 443.21,
+                            'David Ralston': 172.07,
+                            'Salley Hernandez': 287.01,
+                            'James Huller': 151.7,
+                            'Sketch Ditty': 199.29,
+                            'Joshua Fosberg': 154.7,
+                            'David Eckardt': 220.57
+                        },
+
+                    4: {
+                            'Zachary Lever': 355.02,
+                            'Connie Karras': 611.71,
+                            'David Ralston': 227.06,
+                            'James Huller': 209.25,
+                            'Don Willis': 533.474,
+                            'David Eckardt': 204.64,
+                            'Joshua Fosberg': 247.23,
+                            'Salley Hernandez': 487.7,
+                            'Sketch Ditty': 200.29,
+                            'Micha Shines': 219.63
+                        },
+
+                    3: {
+                            'Zack Lever': 300.09,
+                            'Connie Karras': 513.05,
+                            'James Huller': 195.12,
+                            'Don Willis': 447.329,
+                            'Joshua Fosberg': 234.72,
+                            'David Eckardt': 261.24,
+                            'Salley Hernandez': 427.57,
+                            'Chris Head': 266.3,
+                            'Sketch Ditty': 236.83,
+                            'David Ralston': 290.85
+                        },
+
+                    2: {
+                            'Zachary Lever': 290.56,
+                            'Connie Karras': 418.51,
+                            'David Ralston': 284.77,
+                            'David Eckardt': 290.61,
+                            'Ashley Blake': 242.43,
+                            'Tim Post': 206.16,
+                            'Don Willis': 421.369,
+                            'Chris Head': 252.952,
+                            'Salley Hernandez': 380.77,
+                            'Sketch Ditty': 305.89
+                        },
+
+                    12: {
+                            'Connie Karras': 14.06,
+                            'Zack Lever': 271.38,
+                            'David Ralston': 301.25,
+                            'David Eckardt': 379.11,
+                            'Don Willis': 180.21,
+                            'Sketch Ditty': 193.55,
+                            'James Huller': 138.35,
+                            'Phil Essam': 96.554,
+                            'Salley Hernandez': 345.73,
+                            'Joshua Fosberg': 136.85
+                        }
+                }
+            ),
+            (
+                participant_identifiers,
+                [
+                    ('Connie', 'Karras', 'F', 54, 'Munster', 'IN'),
+                    ('David', 'Ralston', 'M', 75, 'Hammond', 'IN'),
+                    ('David', 'Eckardt', 'M', 50, 'Evansville', 'IN'),
+                    ('Steven', 'Kornhaus', 'M', 36, 'Deer Lodge', 'TN'),
+                    ('Zachary', 'Lever', 'M', 47, 'Indian Mound', 'TN'),
+                    ('Ashley', 'Blake', 'F', 37, 'Oak Ridge', 'TN'),
+                    ('Norm', 'Williams', 'M', 58, 'Portage', 'IN'),
+                    ('Tim', 'Post', 'M', 41, 'Chesterton', 'IN'),
+                    ('Shawn', 'Roberts', 'M', 39, 'Clemmon', 'NC'),
+                    ('Phil', 'Essam', 'M', 58, 'Casey', None),
+                    ('Zack', 'Lever', 'M', 48, 'Indian Mound', 'TN'),
+                    ('Don', 'Willis', 'M', 55, 'Bentonville', 'AR'),
+                    ('Joshua', 'Fosberg', 'M', 33, 'Virginia Beach', 'VA'),
+                    ('Salley', 'Hernandez', 'F', 55, 'Atoka', 'TN'),
+                    ('James', 'Huller', 'M', 49, 'Jacksonville', 'NC'),
+                    ('Sketch', 'Ditty', 'M', 43, 'Canton', 'GA'),
+                    ('Frank', 'Bozanich', 'M', 76, 'Reno', 'NV'),
+                    ('Micha', 'Shines', 'F', 49, 'Alexandria', 'VA'),
+                    ('Chris', 'Head', 'M', 36, 'Molena', 'GA')
+                ]
+            )
+        ]
+
+        for result, expected in results_to_test:
+            with self.subTest("Output order is \"result\" -> \"expected\""):
+                self.assertEqual(result, expected)
+
+
+if __name__ == '__main__':
     unittest.main()
