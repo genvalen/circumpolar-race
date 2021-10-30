@@ -113,6 +113,52 @@ def get_miles(href: str) -> float:
     return miles
 
 
+def edit_distance(str1: str, str2: str) -> int:
+    """Return string similarity using Levenshtein Distance Algorithm.
+
+    Measure the minimum number of additions, deletions, or substritutions
+    necessary to transform str2 into str1, and return this number.
+
+    More information: https://en.wikipedia.org/wiki/Edit_distance
+    """
+    # Get column length and row length.
+    col, row = len(str1), len(str2)
+
+    # If either string length is zero,
+    # return the non-zero value.
+    if col == 0:
+        return row
+    elif row == 0:
+        return col
+
+    # Set both strings to lowercase.
+    str1 = str1.lower()
+    str2 = str2.lower()
+
+    # Create dp matrix of shape width x height (col x row).
+    dp = [
+        [0] * (col+1)
+        for _ in range(row+1)
+    ]
+
+    # Begin Edit Distance algo.
+    # Matrix traversal order:
+    #   Vist each column from left to right (each str1 char),
+    #   Start again at the next row (next str2 char).
+
+    for i in range(1, row + 1):
+        for j in range(1, col + 1):
+
+            # Update cell w/ min "edit distance" seen.
+            dp[i][j] = min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1])
+
+            # If current chars not equal, update cell AGAIN with a +1.
+            if str1[j-1] != str2[i-1]:
+                dp[i][j] += 1
+
+    return dp[row][col]
+
+
 def get_participant_data() -> Tuple[
     Set[str],
     Dict[int, Dict[str, float]],

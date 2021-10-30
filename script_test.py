@@ -83,6 +83,32 @@ class TestScript(unittest.TestCase):
             expected
         )
 
+    def test_that_edit_distance_algo_returns_correct_similarity_value(self):
+        # Testcase tuples:
+        # (str1, str2, expected_result)
+        testcases = [
+            ("cat", "can", 1),
+            ("", "cat", 3),
+            ("walrus", "", 6),
+            ("walrus", "walnut", 2),
+            ("fizzy", "frizzy", 1),
+            ("bonniekarras54MunsterIN", "conniekarras53MunsterIN", 2),
+            ("conniekarras54MunsterIN", "Conniekarras53MunsterIN", 1),
+            ("JohnSmithM48IndianMoundTN", "JanetRodriguezF50IndianMoundTN", 11)
+        ]
+
+        for str1, str2, expected in testcases:
+            with self.subTest(f"\"{str1}\", \"{str2}\" -> {expected}"):
+                self.assertEqual(
+                    script.edit_distance(str1, str2),
+                    expected
+                )
+
+
+    @skip("WIP")
+    def test_that_entity_resolution_recognizes_two_people_are_the_same(self):
+        pass
+
 
     def test_get_participant_data_func(self):
         participant_names, monthly_mileage_results, participant_identifiers \
