@@ -45,33 +45,33 @@ def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
     """Make HTTP request and, from the response, return the following
     participant identifiers: first name, last name, gender, age, city, and state.
     """
-    # Prepare URL and header parameters for the HTTP request.
-    url_base = "https://runsignup.com/Race/Results/95983/LookupParticipant/?"
-    result_id, user_id = href.split("=")[1].split("#U") #parse HREF query portion
-    result = f"resultSetId={result_id}&"
-    user = f"userId={user_id}#U{user_id}"
-    url = url_base+result+user
+    # Prepare headers for HTTP request.
     headers = {
         "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0",
         "Accept" : "application/json, */*; q=0.01",
         "Accept-Language" : "en-US,en;q=0.5",
         "X-Requested-With" : "XMLHttpRequest",
         "Connection" : "keep-alive",
-        "Referer" : f"https://runsignup.com/Race/Results/95983/IndividualResult/?{result_id}",
+        "Referer" : "https://runsignup.com/Race/Results/95983/IndividualResult/",
         "Cookie" : "winWidth=1680; _ga=GA1.2.279797247.1629283759; __atuvc=128%7C36%2C6%7C37%2C11%7C38%2C38%7C39%2C4%7C40; cookie_policy_accepted=T; analytics={\"asset\":\"a1ca985c-904e-459a-bfd7-7480afe5b588\",\"source\":1,\"medium\":1}; PHPSESSID=9r2ImrtyrSszLIsWF2YCV3widCfGI9RJ; _mkto_trk=id:350-KBZ-109&token:_mch-runsignup.com-1632559648074-71989; _gid=GA1.2.2082540081.1633160300; __atuvs=615a3572229b618f002"
     }
 
+    # Prepare URL for HTTP request: parse href for query details.
+    url_base = "https://runsignup.com/Race/Results/95983/LookupParticipant/"
+    result_id, user_id = href.split("=")[1].split("#U")
+    payload = {"resultSetId": result_id, "userId": user_id}
+
     # Make HTTP request.
-    resp = requests.get(url, headers=headers)
+    resp = requests.get(url_base, params=payload, headers=headers)
 
     # Convert response to JSON obj and parse relevant output.
-    # If error, return empty dictionary.
+    # If error, return empty tuple.
     try:
         resp_dict = resp.json()['participants'][0]
         keys = ['first_name', 'last_name', 'gender', 'age', 'city', 'state']
         data = tuple(resp_dict[k] for k in keys)
     except:
-        data = {}
+        data = Tuple()
 
     return data
 
@@ -80,11 +80,7 @@ def get_miles(href: str) -> float:
     """Make HTTP request and, from the response, return the total miles tallied
     for specified participant at the end of the region.
     """
-   # Prepare URL and header parameters for the HTTP request.
-    url_schema = "https://runsignup.com"
-    url = url_schema + href
-    result_id, user_id = href.split("=")[1].split("#U") #parse HREF query
-
+    # Prepare headers for the HTTP request.
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0",
         "Accept" : "application/json, */*; q=0.01",
@@ -93,8 +89,12 @@ def get_miles(href: str) -> float:
         "X-Requested-With" : "XMLHttpRequest",
         "DNT": "1",
         "Connection": "keep-alive",
-        "Referer": f"https://runsignup.com/Race/Results/95983/IndividualResult/?resultSetId={result_id}",
+        "Referer": "https://runsignup.com/Race/Results/95983/IndividualResult/",
     }
+
+    # Prepare URL for HTTP request; parse href for data parameter details.
+    url = "https://runsignup.com" + href
+    _, user_id = href.split("=")[1].split("#U")
 
     # Prepare data for HTTP request.
     data = f"userIdCsv={user_id}"
