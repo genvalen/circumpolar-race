@@ -5,9 +5,10 @@ import requests
 from collections import defaultdict
 
 
-def get_html(url="https://runsignup.com/RaceGroups" \
+def get_bs4_soup(url="https://runsignup.com/RaceGroups" \
         "/95983?groupName=In+Jesper%27s+Footsteps"
-        ) -> str:
+    ) -> str:
+    """ Make HTTP request and convert HTML response into bs4 soup."""
     resp = requests.get(url).text
     soup = BeautifulSoup(resp, 'lxml')
     return soup
@@ -17,7 +18,7 @@ def get_region_paths() -> Dict[int, str]:
     """Return a dictionary that contains region numbers and a path to
     the webpage containing data for that region as a key-value pair.
     """
-    soup = get_html()
+    soup = get_bs4_soup()
     region_url_dict = {}
 
     # URL path and region numbers are scaped at dif iterations of loop;
@@ -145,7 +146,7 @@ def get_participant_data() -> Tuple[
     # Iterate through designated webpage for each region in the race (12).
     for region, path in region_url_dict.items():
         url = url_base + path
-        soup = get_html(url)
+        soup = get_bs4_soup(url)
 
         region_results = {}
 
