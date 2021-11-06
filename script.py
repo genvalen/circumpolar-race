@@ -5,12 +5,13 @@ import requests
 from collections import defaultdict
 
 
-def get_bs4_soup(url="https://runsignup.com/RaceGroups" \
-        "/95983?groupName=In+Jesper%27s+Footsteps"
-    ) -> str:
+def get_bs4_soup(
+    url="https://runsignup.com/RaceGroups" \
+    "/95983?groupName=In+Jesper%27s+Footsteps",
+) -> str:
     """ Make HTTP request and convert HTML response into bs4 soup."""
     resp = requests.get(url).text
-    soup = BeautifulSoup(resp, 'lxml')
+    soup = BeautifulSoup(resp, "lxml")
     return soup
 
 
@@ -25,18 +26,19 @@ def get_region_paths() -> Dict[int, str]:
     # path comes before region, so save path until region is found.
 
     path = ""
-    for tag in soup.find_all('td'):
+    for tag in soup.find_all("td"):
 
         # Search for URL to the next page
-        match = tag.find_all(name='a', \
-            class_='fs-lg d-block margin-t-10 margin-b-10 bold')
+        match = tag.find_all(
+            name="a", class_="fs-lg d-block margin-t-10 margin-b-10 bold"
+        )
 
         if match:
-            path = match[0]['href'].strip()
+            path = match[0]["href"].strip()
 
         # Search for the region that URL represents
         if "region" in tag.text.lower():
-            region = int(tag.text.split()[1]) # extract region number
+            region = int(tag.text.split()[1])  # extract region number
             region_url_dict[region] = path
 
     return region_url_dict
@@ -48,13 +50,13 @@ def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
     """
     # Prepare headers for HTTP request.
     headers = {
-        "User-Agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0",
-        "Accept" : "application/json, */*; q=0.01",
-        "Accept-Language" : "en-US,en;q=0.5",
-        "X-Requested-With" : "XMLHttpRequest",
-        "Connection" : "keep-alive",
-        "Referer" : "https://runsignup.com/Race/Results/95983/IndividualResult/",
-        "Cookie" : "winWidth=1680; _ga=GA1.2.279797247.1629283759; __atuvc=128%7C36%2C6%7C37%2C11%7C38%2C38%7C39%2C4%7C40; cookie_policy_accepted=T; analytics={\"asset\":\"a1ca985c-904e-459a-bfd7-7480afe5b588\",\"source\":1,\"medium\":1}; PHPSESSID=9r2ImrtyrSszLIsWF2YCV3widCfGI9RJ; _mkto_trk=id:350-KBZ-109&token:_mch-runsignup.com-1632559648074-71989; _gid=GA1.2.2082540081.1633160300; __atuvs=615a3572229b618f002"
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0",
+        "Accept": "application/json, */*; q=0.01",
+        "Accept-Language": "en-US,en;q=0.5",
+        "X-Requested-With": "XMLHttpRequest",
+        "Connection": "keep-alive",
+        "Referer": "https://runsignup.com/Race/Results/95983/IndividualResult/",
+        "Cookie": 'winWidth=1680; _ga=GA1.2.279797247.1629283759; __atuvc=128%7C36%2C6%7C37%2C11%7C38%2C38%7C39%2C4%7C40; cookie_policy_accepted=T; analytics={"asset":"a1ca985c-904e-459a-bfd7-7480afe5b588","source":1,"medium":1}; PHPSESSID=9r2ImrtyrSszLIsWF2YCV3widCfGI9RJ; _mkto_trk=id:350-KBZ-109&token:_mch-runsignup.com-1632559648074-71989; _gid=GA1.2.2082540081.1633160300; __atuvs=615a3572229b618f002',
     }
 
     # Prepare URL for HTTP request: parse href for query details.
@@ -68,8 +70,8 @@ def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
     # Convert response to JSON obj and parse relevant output.
     # If error, return empty tuple.
     try:
-        resp_dict = resp.json()['participants'][0]
-        keys = ['first_name', 'last_name', 'gender', 'age', 'city', 'state']
+        resp_dict = resp.json()["participants"][0]
+        keys = ["first_name", "last_name", "gender", "age", "city", "state"]
         data = tuple(resp_dict[k] for k in keys)
     except:
         data = Tuple()
@@ -84,10 +86,10 @@ def get_miles(href: str) -> float:
     # Prepare headers for the HTTP request.
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0",
-        "Accept" : "application/json, */*; q=0.01",
-        "Accept-Language" : "en-US,en;q=0.5",
-        "Content-Type" : "application/x-www-form-urlencoded; charset=UTF-8",
-        "X-Requested-With" : "XMLHttpRequest",
+        "Accept": "application/json, */*; q=0.01",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest",
         "DNT": "1",
         "Connection": "keep-alive",
         "Referer": "https://runsignup.com/Race/Results/95983/IndividualResult/",
@@ -106,18 +108,14 @@ def get_miles(href: str) -> float:
     # Convert response into JSON obj and parse for relevent output.
     # If error, return `None`.
     try:
-        miles = resp.json()['results'][0]['result_tally_value']
+        miles = resp.json()["results"][0]["result_tally_value"]
     except:
         miles = None
 
     return miles
 
 
-def get_participant_data() -> Tuple[
-    Set[str],
-    Dict[int, Dict[str, float]],
-    Tuple[str]
-]:
+def get_participant_data() -> Tuple[Set[str], Dict[int, Dict[str, float]], Tuple[str]]:
     """Return a tuple containing 3 items:
         1) a set of participants' full names
 
@@ -154,9 +152,12 @@ def get_participant_data() -> Tuple[
         # Scrape name and HREF for each.
         # HREF - used in HTTP call returning participant's data for cur region.
         # Name - used w/ `participants_seen` to prevent over-use of HTTP calls.
-        for tag in soup.find_all("a", class_="rsuBtn rsuBtn--text-whitebg rsuBtn--xs margin-r-0"):
-            href = tag['href']
-            name = tag.text.strip() # incomplete name -> first name/last initial
+        for tag in soup.find_all(
+            name="a",
+            class_="rsuBtn rsuBtn--text-whitebg rsuBtn--xs margin-r-0"
+        ):
+            href = tag["href"]
+            name = tag.text.strip()  # incomplete name -> first name/last initial
 
             if name not in participants_seen:
 
@@ -167,7 +168,7 @@ def get_participant_data() -> Tuple[
                 participant_identifiers.append(tuple(identifiers))
 
                 # Update dict of participants seen.
-                full_name = " ".join(identifiers[:2]) # full name
+                full_name = " ".join(identifiers[:2])  # full name
                 participants_seen[name] = full_name
 
             # Make HTTP call returning: total miles
@@ -195,7 +196,7 @@ def get_dataframe():
     # add row of data for each participant in `names`
     # region is key, list of miles logged per region is value
     for name in names:
-        for region in range(1,13):
+        for region in range(1, 13):
             col = "Region {}".format(str(region))
 
             if name in src_data[region]:
@@ -206,10 +207,10 @@ def get_dataframe():
     df = pd.DataFrame(data)
 
     # Add column: Total Mileage
-    df['Total Mileage'] = df.loc[:].sum(axis=1, numeric_only=True)
+    df["Total Mileage"] = df.loc[:].sum(axis=1, numeric_only=True)
 
     # Sort results by Total Mileage column
-    df = df.sort_values(by='Total Mileage', ascending=False)
+    df = df.sort_values(by="Total Mileage", ascending=False)
 
     # Reset indices
     df = df.reset_index(drop=True)
@@ -220,7 +221,7 @@ def get_dataframe():
     totals_per_region = ["Miles Per Region"]
     row_values = list(df.sum(axis=0, numeric_only=True))
     totals_per_region.extend(row_values)
-    df.loc[len(df.index)+1] = totals_per_region
+    df.loc[len(df.index) + 1] = totals_per_region
 
     # Export excel file
     output_file = r"circumpolar.xlsx"
@@ -229,5 +230,5 @@ def get_dataframe():
     print("An Excel spreadsheet has been exported.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     get_dataframe()

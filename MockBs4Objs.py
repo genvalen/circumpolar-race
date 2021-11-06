@@ -50,7 +50,4 @@ mock_html_2 = """
 </tr>
 """
 
-bs4_objs = [
-    BeautifulSoup(mock_html_1, "lxml"),
-    BeautifulSoup(mock_html_2, "lxml")
-]
+bs4_objs = [BeautifulSoup(mock_html_1, "lxml"), BeautifulSoup(mock_html_2, "lxml")]
