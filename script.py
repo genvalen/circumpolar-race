@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, Set
+from typing import Dict, Tuple, Set, List
 import pandas as pd
 from bs4 import BeautifulSoup
 import requests
@@ -6,18 +6,18 @@ from collections import defaultdict
 
 
 def get_bs4_soup(
-    url="https://runsignup.com/RaceGroups" \
+    url: str = "https://runsignup.com/RaceGroups" \
     "/95983?groupName=In+Jesper%27s+Footsteps",
 ) -> str:
-    """ Make HTTP request and convert HTML response into bs4 soup."""
+    """ Get HTML and convert into bs4 soup."""
     resp = requests.get(url).text
     soup = BeautifulSoup(resp, "lxml")
     return soup
 
 
 def get_region_paths() -> Dict[int, str]:
-    """Return a dictionary that contains region numbers and a path to
-    the webpage containing data for that region as a key-value pair.
+    """Return a dictionary where key is a region number and value is
+    a path to the webpage containing data for said region.
     """
     soup = get_bs4_soup()
     region_url_dict = {}
@@ -30,7 +30,8 @@ def get_region_paths() -> Dict[int, str]:
 
         # Search for URL to the next page
         match = tag.find_all(
-            name="a", class_="fs-lg d-block margin-t-10 margin-b-10 bold"
+            name="a",
+            class_="fs-lg d-block margin-t-10 margin-b-10 bold"
         )
 
         if match:
@@ -45,8 +46,8 @@ def get_region_paths() -> Dict[int, str]:
 
 
 def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
-    """Make HTTP request and, from the response, return the following
-    participant identifiers: first name, last name, gender, age, city, and state.
+    """Make HTTP request returning the following particpant
+    identifiers: first name, last name, gender, age, city, and state.
     """
     # Prepare headers for HTTP request.
     headers = {
@@ -74,14 +75,14 @@ def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
         keys = ["first_name", "last_name", "gender", "age", "city", "state"]
         data = tuple(resp_dict[k] for k in keys)
     except:
-        data = Tuple()
+        data = tuple()
 
     return data
 
 
 def get_miles(href: str) -> float:
-    """Make HTTP request and, from the response, return the total miles tallied
-    for specified participant at the end of the region.
+    """Make HTTP request returning the total number of miles completed
+    by a participant at the end of the region.
     """
     # Prepare headers for the HTTP request.
     headers = {
@@ -115,16 +116,16 @@ def get_miles(href: str) -> float:
     return miles
 
 
-def get_participant_data() -> Tuple[Set[str], Dict[int, Dict[str, float]], Tuple[str]]:
+def get_participant_data() -> Tuple[Set[str], Dict[int, Dict[str, float]], List[Tuple[str, ...]]]:
     """Return a tuple containing 3 items:
-        1) a set of participants' full names
+        1) a set of participants' full names.
 
         2) a dict of participant race results where the key is region number
-            and the value is a dict of participants (k) and mileage (v)
+            and the value is a nested dict of participants (k) and mileage (v)
             for that region.
 
         3) a list of tuples where each tuple contains participant identifers:
-            name, gender, and age
+            first name, last name, gender, age, city, state.
     """
     url_base = "https://runsignup.com"
     region_url_dict = get_region_paths()
@@ -161,7 +162,7 @@ def get_participant_data() -> Tuple[Set[str], Dict[int, Dict[str, float]], Tuple
 
             if name not in participants_seen:
 
-                # Make HTTP call returning: full name, age, gender, city.
+                # Make HTTP call returning: full name, age, gender, city, state.
                 identifiers = get_identifiers(href)
 
                 # Store identifiers for entity resolution.
@@ -179,7 +180,7 @@ def get_participant_data() -> Tuple[Set[str], Dict[int, Dict[str, float]], Tuple
         # Update overall race results with results from current region.
         race_results[region] = region_results
 
-    # Create set of full names of participants in the race
+    # Create set of full names of all participants in the race.
     participant_names = set(participants_seen.values())
 
     return participant_names, race_results, participant_identifiers
