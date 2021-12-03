@@ -93,4 +93,4 @@ mock_html_3 = """
 bs4_objs = [BeautifulSoup(mock_html_1, "lxml"), BeautifulSoup(mock_html_2, "lxml")]
 
 # Mock HTML for scraping region endpoints
-endpoints = BeautifulSoup(mock_html_3, "lxml")
+mock_soup = BeautifulSoup(mock_html_3, "lxml")

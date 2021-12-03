@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch
+import fixtures.MockBs4Objs as mock_html
 import main
 
 
@@ -8,7 +9,6 @@ class TestScript(unittest.TestCase):
 
     @patch("main.get_bs4_soup")
     def test_endpoints_returned_by_get_region_paths(self, mock_get):
-        import MockBs4Objs
 
         expected = {
             1: "/RaceGroups/95983/Groups/1",
@@ -25,8 +25,8 @@ class TestScript(unittest.TestCase):
             12: "/RaceGroups/95983/Groups/12",
         }
 
-        # Configue Mock object's return value.
-        mock_get.return_value = MockBs4Objs.endpoints
+        # Configue Mock object's return value
+        mock_get.return_value = mock_html.mock_soup
 
         # Assertion.
         self.assertDictEqual(main.get_region_paths("mock_team_name"), expected)
@@ -89,8 +89,6 @@ class TestScript(unittest.TestCase):
     def test_data_is_organized_correctly_by_get_participant_data(
         self, mock_region_paths, mock_soup, mock_miles, mock_id
     ):
-        import MockBs4Objs
-
         # Configure mock return value.
         mock_region_paths.return_value = {
             1: "mock/RaceGroups/95983/Groups/802853",
@@ -115,7 +113,7 @@ class TestScript(unittest.TestCase):
         #   * Mock HTTP resp. for ID of each unique participant (4 unique).
         #       - note: should be 3 unique, but there is entity resolution issue.
 
-        mock_sp1, mock_sp2 = MockBs4Objs.bs4_objs
+        mock_sp1, mock_sp2 = mock_html.bs4_objs
         mock_soup.side_effect = [mock_sp1, mock_sp2] * 6
         mock_miles.side_effect = [100.50, 200.50, 300.50, 400.50, 80.50] * 6
         mock_id.side_effect = [
