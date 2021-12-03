@@ -1,31 +1,37 @@
 import unittest
 from unittest.mock import patch
-import script
+import main
 
 
 class TestScript(unittest.TestCase):
     maxDiff = None  # make failing tests easier to debug
 
-    # makes API calls
-    def test_get_region_paths_func(self):
+    @patch("main.get_bs4_soup")
+    def test_endpoints_returned_by_get_region_paths(self, mock_get):
+        import MockBs4Objs
+
         expected = {
-            1: "/RaceGroups/95983/Groups/802853",
-            11: "/RaceGroups/95983/Groups/894183",
-            10: "/RaceGroups/95983/Groups/894182",
-            9: "/RaceGroups/95983/Groups/894181",
-            8: "/RaceGroups/95983/Groups/894180",
-            7: "/RaceGroups/95983/Groups/894179",
-            6: "/RaceGroups/95983/Groups/861224",
-            5: "/RaceGroups/95983/Groups/855643",
-            4: "/RaceGroups/95983/Groups/843369",
-            3: "/RaceGroups/95983/Groups/832629",
-            2: "/RaceGroups/95983/Groups/813501",
-            12: "/RaceGroups/95983/Groups/894184",
+            1: "/RaceGroups/95983/Groups/1",
+            2: "/RaceGroups/95983/Groups/2",
+            3: "/RaceGroups/95983/Groups/3",
+            4: "/RaceGroups/95983/Groups/4",
+            5: "/RaceGroups/95983/Groups/5",
+            6: "/RaceGroups/95983/Groups/6",
+            7: "/RaceGroups/95983/Groups/7",
+            8: "/RaceGroups/95983/Groups/8",
+            9: "/RaceGroups/95983/Groups/9",
+            10: "/RaceGroups/95983/Groups/10",
+            11: "/RaceGroups/95983/Groups/11",
+            12: "/RaceGroups/95983/Groups/12",
         }
 
-        self.assertDictEqual(script.get_region_paths(), expected)
+        # Configue Mock object's return value.
+        mock_get.return_value = MockBs4Objs.endpoints
 
-    @patch("script.requests.get")
+        # Assertion.
+        self.assertDictEqual(main.get_region_paths("mock_team_name"), expected)
+
+    @patch("main.requests.get")
     def test_info_returned_by_get_identifiers_is_correct(self, mock_get):
         input_href = "mock/href/query/?resultSetId=212380#U44542375"
         expected = ("Lin Manuel", "Miranda", "M", 54, "Munster", "IN")
@@ -52,9 +58,9 @@ class TestScript(unittest.TestCase):
         mock_get.return_value.json.return_value = mock_json_response
 
         # Assertion.
-        self.assertEqual(script.get_identifiers(input_href), expected)
+        self.assertEqual(main.get_identifiers(input_href), expected)
 
-    @patch("script.requests.post")
+    @patch("main.requests.post")
     def test_miles_returned_by_get_miles_is_correct(self, mock_post):
         input_href = "mock/href/query//?resultSetId=212380#U44542375"
         expected = 442.71
@@ -74,12 +80,12 @@ class TestScript(unittest.TestCase):
         mock_post.return_value.json.return_value = mock_json_response
 
         # Assertion.
-        self.assertEqual(script.get_miles(input_href), expected)
+        self.assertEqual(main.get_miles(input_href), expected)
 
-    @patch("script.get_identifiers")
-    @patch("script.get_miles")
-    @patch("script.get_bs4_soup")
-    @patch("script.get_region_paths")
+    @patch("main.get_identifiers")
+    @patch("main.get_miles")
+    @patch("main.get_bs4_soup")
+    @patch("main.get_region_paths")
     def test_data_is_organized_correctly_by_get_participant_data(
         self, mock_region_paths, mock_soup, mock_miles, mock_id
     ):
@@ -88,24 +94,24 @@ class TestScript(unittest.TestCase):
         # Configure mock return value.
         mock_region_paths.return_value = {
             1: "mock/RaceGroups/95983/Groups/802853",
-            2: "mock/RaceGroups/95983/Groups/894183",
-            3: "mock/RaceGroups/95983/Groups/894182",
-            4: "mock/RaceGroups/95983/Groups/894181",
-            5: "mock/RaceGroups/95983/Groups/894180",
-            6: "mock/RaceGroups/95983/Groups/894179",
-            7: "mock/RaceGroups/95983/Groups/861224",
-            8: "mock/RaceGroups/95983/Groups/855643",
-            9: "mock/RaceGroups/95983/Groups/843369",
-            10: "mock/RaceGroups/95983/Groups/832629",
-            11: "mock/RaceGroups/95983/Groups/813501",
+            2: "mock/RaceGroups/95983/Groups/813501",
+            3: "mock/RaceGroups/95983/Groups/832629",
+            4: "mock/RaceGroups/95983/Groups/843369",
+            5: "mock/RaceGroups/95983/Groups/855643",
+            6: "mock/RaceGroups/95983/Groups/861224",
+            7: "mock/RaceGroups/95983/Groups/894179",
+            8: "mock/RaceGroups/95983/Groups/894180",
+            9: "mock/RaceGroups/95983/Groups/894181",
+            10: "mock/RaceGroups/95983/Groups/894182",
+            11: "mock/RaceGroups/95983/Groups/894183",
             12: "mock/RaceGroups/95983/Groups/894184",
         }
 
         # Configure mock side-effects.
-        #   * Split 2 sets of mock HTML between 12 regions.
-        #   * Scrape HTML 1 for data on 2 participants.
-        #   * Scrape HTML 2 for data on 3 participants.
-        #   * Mock HTTP resp. for mile results of each participant (5 results).
+        #   * Alternate 2 sets of mock HTML between 12 regions.
+        #   * Scrape HTML 1 for 2 participants.
+        #   * Scrape HTML 2 for 3 participants.
+        #   * Mock HTTP resp. for mileage results of each participant (5 results).
         #   * Mock HTTP resp. for ID of each unique participant (4 unique).
         #       - note: should be 3 unique, but there is entity resolution issue.
 
@@ -120,12 +126,12 @@ class TestScript(unittest.TestCase):
         ]
 
         # TESTS->
-        # Test data structure returned by get_participant_data.
+        # Test data structures returned by get_participant_data.
         (
             participant_names,
             monthly_mileage_results,
             participant_identifiers,
-        ) = script.get_participant_data()
+        ) = main.get_participant_data("mock_team_name")
 
         results_to_test = [
             # tuples contain: given result, expected result.
@@ -141,37 +147,55 @@ class TestScript(unittest.TestCase):
             (
                 monthly_mileage_results,
                 {
-                    1: {"Christopher Jackson": 100.50, "Karen Olivo": 200.50,},
+                    1: {
+                        "Christopher Jackson": 100.50,
+                        "Karen Olivo": 200.50,
+                    },
                     2: {
                         "Chris Jackson": 300.50,
                         "Karen Olivo": 400.50,
                         "Jonathon Groff": 80.50,
                     },
-                    3: {"Christopher Jackson": 100.50, "Karen Olivo": 200.50,},
+                    3: {
+                        "Christopher Jackson": 100.50,
+                        "Karen Olivo": 200.50,
+                    },
                     4: {
                         "Chris Jackson": 300.50,
                         "Karen Olivo": 400.50,
                         "Jonathon Groff": 80.50,
                     },
-                    5: {"Christopher Jackson": 100.50, "Karen Olivo": 200.50,},
+                    5: {
+                        "Christopher Jackson": 100.50,
+                        "Karen Olivo": 200.50,
+                    },
                     6: {
                         "Chris Jackson": 300.50,
                         "Karen Olivo": 400.50,
                         "Jonathon Groff": 80.50,
                     },
-                    7: {"Christopher Jackson": 100.50, "Karen Olivo": 200.50,},
+                    7: {
+                        "Christopher Jackson": 100.50,
+                        "Karen Olivo": 200.50,
+                    },
                     8: {
                         "Chris Jackson": 300.50,
                         "Karen Olivo": 400.50,
                         "Jonathon Groff": 80.50,
                     },
-                    9: {"Christopher Jackson": 100.50, "Karen Olivo": 200.50,},
+                    9: {
+                        "Christopher Jackson": 100.50,
+                        "Karen Olivo": 200.50,
+                    },
                     10: {
                         "Chris Jackson": 300.50,
                         "Karen Olivo": 400.50,
                         "Jonathon Groff": 80.50,
                     },
-                    11: {"Christopher Jackson": 100.50, "Karen Olivo": 200.50,},
+                    11: {
+                        "Christopher Jackson": 100.50,
+                        "Karen Olivo": 200.50,
+                    },
                     12: {
                         "Chris Jackson": 300.50,
                         "Karen Olivo": 400.50,

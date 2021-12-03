@@ -3,23 +3,40 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import requests
 from collections import defaultdict
+from flask import Flask, render_template, request, send_from_directory
+import urllib.parse
+
+app = Flask(__name__)
+
+# the excel spreadsheet generated gets saved here:
+app.config["CLIENT_XLSL"] = "static/client"
 
 
-def get_bs4_soup(
-    url: str = "https://runsignup.com/RaceGroups" \
-    "/95983?groupName=In+Jesper%27s+Footsteps",
-) -> str:
-    """ Get HTML and convert into bs4 soup."""
+@app.route("/")
+def index():
+    try:
+        return render_template("index.html")
+    except Exception as e:
+        return str(e)
+
+
+def get_bs4_soup(url: str, group: str = "") -> str:
+    """Get HTML and convert into bs4 soup."""
+    url += group
     resp = requests.get(url).text
     soup = BeautifulSoup(resp, "lxml")
     return soup
 
 
-def get_region_paths() -> Dict[int, str]:
+def get_region_paths(team_name) -> Dict[int, str]:
     """Return a dictionary where key is a region number and value is
     a path to the webpage containing data for said region.
     """
-    soup = get_bs4_soup()
+    soup = get_bs4_soup(
+        url="https://runsignup.com/RaceGroups/95983?groupName=",
+        group=team_name,
+    )
+
     region_url_dict = {}
 
     # URL path and region numbers are scaped at dif iterations of loop;
@@ -30,8 +47,7 @@ def get_region_paths() -> Dict[int, str]:
 
         # Search for URL to the next page
         match = tag.find_all(
-            name="a",
-            class_="fs-lg d-block margin-t-10 margin-b-10 bold"
+            name="a", class_="fs-lg d-block margin-t-10 margin-b-10 bold"
         )
 
         if match:
@@ -51,13 +67,24 @@ def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
     """
     # Prepare headers for HTTP request.
     headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0",
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101"
+            " Firefox/91.0"
+        ),
         "Accept": "application/json, */*; q=0.01",
         "Accept-Language": "en-US,en;q=0.5",
         "X-Requested-With": "XMLHttpRequest",
         "Connection": "keep-alive",
         "Referer": "https://runsignup.com/Race/Results/95983/IndividualResult/",
-        "Cookie": 'winWidth=1680; _ga=GA1.2.279797247.1629283759; __atuvc=128%7C36%2C6%7C37%2C11%7C38%2C38%7C39%2C4%7C40; cookie_policy_accepted=T; analytics={"asset":"a1ca985c-904e-459a-bfd7-7480afe5b588","source":1,"medium":1}; PHPSESSID=9r2ImrtyrSszLIsWF2YCV3widCfGI9RJ; _mkto_trk=id:350-KBZ-109&token:_mch-runsignup.com-1632559648074-71989; _gid=GA1.2.2082540081.1633160300; __atuvs=615a3572229b618f002',
+        "Cookie": (
+            "winWidth=1680; _ga=GA1.2.279797247.1629283759;"
+            " __atuvc=128%7C36%2C6%7C37%2C11%7C38%2C38%7C39%2C4%7C40;"
+            " cookie_policy_accepted=T;"
+            ' analytics={"asset":"a1ca985c-904e-459a-bfd7-7480afe5b588","source":1,"medium":1};'
+            " PHPSESSID=9r2ImrtyrSszLIsWF2YCV3widCfGI9RJ;"
+            " _mkto_trk=id:350-KBZ-109&token:_mch-runsignup.com-1632559648074-71989;"
+            " _gid=GA1.2.2082540081.1633160300; __atuvs=615a3572229b618f002"
+        ),
     }
 
     # Prepare URL for HTTP request: parse href for query details.
@@ -68,16 +95,13 @@ def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
     # Make HTTP request.
     resp = requests.get(url_base, params=payload, headers=headers)
 
-    # Convert response to JSON obj and parse relevant output.
-    # If error, return empty tuple.
     try:
         resp_dict = resp.json()["participants"][0]
         keys = ["first_name", "last_name", "gender", "age", "city", "state"]
         data = tuple(resp_dict[k] for k in keys)
-    except:
-        data = tuple()
-
-    return data
+        return data
+    except Exception as e:
+        return str(e)
 
 
 def get_miles(href: str) -> float:
@@ -86,7 +110,10 @@ def get_miles(href: str) -> float:
     """
     # Prepare headers for the HTTP request.
     headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0",
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101"
+            " Firefox/91.0"
+        ),
         "Accept": "application/json, */*; q=0.01",
         "Accept-Language": "en-US,en;q=0.5",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -106,29 +133,27 @@ def get_miles(href: str) -> float:
     # Make HTTP request.
     resp = requests.post(url, headers=headers, data=data)
 
-    # Convert response into JSON obj and parse for relevent output.
-    # If error, return `None`.
     try:
-        miles = resp.json()["results"][0]["result_tally_value"]
-    except:
-        miles = None
-
-    return miles
+        return resp.json()["results"][0]["result_tally_value"]
+    except Exception as e:
+        return str(e)
 
 
-def get_participant_data() -> Tuple[Set[str], Dict[int, Dict[str, float]], List[Tuple[str, ...]]]:
+def get_participant_data(
+    team_name,
+) -> Tuple[Set[str], Dict[int, Dict[str, float]], List[Tuple[str, ...]]]:
     """Return a tuple containing 3 items:
-        1) a set of participants' full names.
+    1) a set of participants' full names.
 
-        2) a dict of participant race results where the key is region number
-            and the value is a nested dict of participants (k) and mileage (v)
-            for that region.
+    2) a dict of participant race results where the key is region number
+        and the value is a nested dict of participants (k) and mileage (v)
+        for that region.
 
-        3) a list of tuples where each tuple contains participant identifers:
-            first name, last name, gender, age, city, state.
+    3) a list of tuples where each tuple contains participant identifers:
+        first name, last name, gender, age, city, state.
     """
     url_base = "https://runsignup.com"
-    region_url_dict = get_region_paths()
+    region_url_dict = get_region_paths(team_name)
 
     race_results = {}
     participant_identifiers = []
@@ -154,8 +179,7 @@ def get_participant_data() -> Tuple[Set[str], Dict[int, Dict[str, float]], List[
         # HREF - used in HTTP call returning participant's data for cur region.
         # Name - used w/ `participants_seen` to prevent over-use of HTTP calls.
         for tag in soup.find_all(
-            name="a",
-            class_="rsuBtn rsuBtn--text-whitebg rsuBtn--xs margin-r-0"
+            name="a", class_="rsuBtn rsuBtn--text-whitebg rsuBtn--xs margin-r-0"
         ):
             href = tag["href"]
             name = tag.text.strip()  # incomplete name -> first name/last initial
@@ -186,25 +210,34 @@ def get_participant_data() -> Tuple[Set[str], Dict[int, Dict[str, float]], List[
     return participant_names, race_results, participant_identifiers
 
 
+@app.route("/download", methods=["POST"])
 def get_dataframe():
-    names, src_data, _ = get_participant_data()
-    names = sorted(list(names))
+    # Get input from user: their team name.
+    team_name = request.form["Team Name"].lower()
+    team_name = urllib.parse.quote(team_name)  # make it URL friendly
 
+    # Get data for participants in the team specified.
+    names, src_data, _ = get_participant_data(team_name)
+
+    # Prepare a dict from which to make a spreadsheet of participant data.
     data = defaultdict(list)
-
+    names = sorted(list(names))
     data["Team Member"].extend(names)
 
-    # add row of data for each participant in `names`
-    # region is key, list of miles logged per region is value
+    # Create a column for each region where each record is
+    # the number of miles a participant has logged for that region.
+    # Miles inputs are ordered based on the Team Member column.
+
     for name in names:
         for region in range(1, 13):
-            col = "Region {}".format(str(region))
+            column_name = f"Region {region}"
 
             if name in src_data[region]:
-                data[col].append(src_data[region][name])
+                data[column_name].append(src_data[region][name])
             else:
-                data[col].append(0)
+                data[column_name].append(0)
 
+    # Create dataframe.
     df = pd.DataFrame(data)
 
     # Add column: Total Mileage
@@ -224,12 +257,19 @@ def get_dataframe():
     totals_per_region.extend(row_values)
     df.loc[len(df.index) + 1] = totals_per_region
 
-    # Export excel file
-    output_file = r"circumpolar.xlsx"
+    # Create excel file
+    output_file = r"static/client/results.xlsx"
     df.to_excel(output_file, index=1)
 
-    print("An Excel spreadsheet has been exported.")
+    # Export excel file from browser
+    try:
+        filename = "results.xlsx"
+        return send_from_directory(
+            app.config["CLIENT_XLSL"], filename, as_attachment=True
+        )
+    except Exception as e:
+        return str(e)
 
 
 if __name__ == "__main__":
-    get_dataframe()
+    app.run(debug=True)
