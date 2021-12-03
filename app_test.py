@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import patch
 import fixtures.MockBs4Objs as mock_html
-import main
+import app
 
 
 class TestScript(unittest.TestCase):
     maxDiff = None  # make failing tests easier to debug
 
-    @patch("main.get_bs4_soup")
+    @patch("app.get_bs4_soup")
     def test_endpoints_returned_by_get_region_paths(self, mock_get):
 
         expected = {
@@ -29,9 +29,9 @@ class TestScript(unittest.TestCase):
         mock_get.return_value = mock_html.mock_soup
 
         # Assertion.
-        self.assertDictEqual(main.get_region_paths("mock_team_name"), expected)
+        self.assertDictEqual(app.get_region_paths("mock_team_name"), expected)
 
-    @patch("main.requests.get")
+    @patch("app.requests.get")
     def test_info_returned_by_get_identifiers_is_correct(self, mock_get):
         input_href = "mock/href/query/?resultSetId=212380#U44542375"
         expected = ("Lin Manuel", "Miranda", "M", 54, "Munster", "IN")
@@ -58,9 +58,9 @@ class TestScript(unittest.TestCase):
         mock_get.return_value.json.return_value = mock_json_response
 
         # Assertion.
-        self.assertEqual(main.get_identifiers(input_href), expected)
+        self.assertEqual(app.get_identifiers(input_href), expected)
 
-    @patch("main.requests.post")
+    @patch("app.requests.post")
     def test_miles_returned_by_get_miles_is_correct(self, mock_post):
         input_href = "mock/href/query//?resultSetId=212380#U44542375"
         expected = 442.71
@@ -80,12 +80,12 @@ class TestScript(unittest.TestCase):
         mock_post.return_value.json.return_value = mock_json_response
 
         # Assertion.
-        self.assertEqual(main.get_miles(input_href), expected)
+        self.assertEqual(app.get_miles(input_href), expected)
 
-    @patch("main.get_identifiers")
-    @patch("main.get_miles")
-    @patch("main.get_bs4_soup")
-    @patch("main.get_region_paths")
+    @patch("app.get_identifiers")
+    @patch("app.get_miles")
+    @patch("app.get_bs4_soup")
+    @patch("app.get_region_paths")
     def test_data_is_organized_correctly_by_get_participant_data(
         self, mock_region_paths, mock_soup, mock_miles, mock_id
     ):
@@ -129,7 +129,7 @@ class TestScript(unittest.TestCase):
             participant_names,
             monthly_mileage_results,
             participant_identifiers,
-        ) = main.get_participant_data("mock_team_name")
+        ) = app.get_participant_data("mock_team_name")
 
         results_to_test = [
             # tuples contain: given result, expected result.
