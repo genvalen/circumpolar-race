@@ -210,12 +210,7 @@ def get_participant_data(
     return participant_names, race_results, participant_identifiers
 
 
-@app.route("/download", methods=["POST"])
-def get_dataframe():
-    # Get input from user: their team name.
-    team_name = request.form["Team Name"].lower()
-    team_name = urllib.parse.quote(team_name)  # make it URL friendly
-
+def get_spreadsheet(team_name):
     # Get data for participants in the team specified.
     names, src_data, _ = get_participant_data(team_name)
 
@@ -227,7 +222,6 @@ def get_dataframe():
     # Create a column for each region where each record is
     # the number of miles a participant has logged for that region.
     # Miles inputs are ordered based on the Team Member column.
-
     for name in names:
         for region in range(1, 13):
             column_name = f"Region {region}"
@@ -257,11 +251,23 @@ def get_dataframe():
     totals_per_region.extend(row_values)
     df.loc[len(df.index) + 1] = totals_per_region
 
-    # Create excel file
+    # Convert df to excel file
     output_file = r"static/client/results.xlsx"
     df.to_excel(output_file, index=1)
 
-    # Export excel file from browser
+    return
+
+
+@app.route("/download", methods=["POST"])
+def export_spreadsheet():
+    # Get input from user: a team name.
+    team_name = request.form["Team Name"].lower()
+    team_name = urllib.parse.quote(team_name)  # make URL friendly
+
+    # Create excel spreadsheet for given team
+    get_spreadsheet(team_name)
+
+    # Return spreadsheet to user via browser
     try:
         filename = "results.xlsx"
         return send_from_directory(

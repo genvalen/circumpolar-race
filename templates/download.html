@@ -1,13 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet" href="/static/style.css" />
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>An Excel spreadsheet has been exported.</title>
-</head>
-<body>
+{% extends 'base.html' %}
 
-</body>
-</html>
+{%  block title %}Download{%  endblock %}
+
+{%  block content %}
+    <h1>An Excel spreadsheet is being exported. This may take around 30 seconds.</h1>
+    <a href="{{ url_for( 'index' ) }}">Homepage</a>
+{%  endblock %}
