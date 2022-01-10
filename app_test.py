@@ -7,6 +7,37 @@ import app
 class TestScript(unittest.TestCase):
     maxDiff = None  # make failing tests easier to debug
 
+    def test_get_response_index(self):
+        # Verify content of the index page
+        app.app.testing = True
+        client = app.app.test_client()
+        url = "/"
+        resp = client.get(url)
+        testcases = (
+            (resp, b"Spreadsheet Generator"),
+            (resp, b"Please wait around 30 seconds"),
+        )
+
+        # Assertion.
+        for resp, expected in testcases:
+            with self.subTest():
+                self.assertTrue(expected in resp.data)
+        self.assertEqual(resp.status_code, 200)
+
+    @unittest.skip("WIP")
+    @patch("app.send_from_directory")
+    def test_post_response_index(self, mock_send):
+        # Verify that a spreadsheet has been exported
+        mock_send.return_value = "test send"
+        app.app.testing = True
+        client = app.app.test_client()
+        url = "/"
+        resp = client.post(url)
+
+        # Assertion.
+        # assert mock_send.called
+        self.assertEqual(resp.status_code, 405)
+
     @patch("app.get_bs4_soup")
     def test_endpoints_returned_by_get_region_paths(self, mock_get):
 
@@ -216,6 +247,25 @@ class TestScript(unittest.TestCase):
         for result, expected in results_to_test:
             with self.subTest('"result" -> "expected"'):
                 self.assertEqual(result, expected)
+
+    @unittest.skip("function removed for now")
+    def test_get_response_for_export_spreadsheet(self):
+        # Verify content of the download page
+        app.app.testing = True
+        client = app.app.test_client()
+        url = "/download"
+        resp = client.get(url)
+
+        testcases = (
+            (resp, b"Download"),
+            (resp, b"An Excel spreadsheet is being exported. This"),
+        )
+
+        # Assertions.
+        for resp, expected in testcases:
+            with self.subTest():
+                self.assertTrue(expected in resp.data)
+        self.assertEqual(resp.status_code, 200)
 
 
 if __name__ == "__main__":

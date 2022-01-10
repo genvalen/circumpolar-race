@@ -3,6 +3,10 @@ body {
     color: rgb(228, 119, 51);
 }
 
+.content {
+    color: black;
+}
+
 .footnote {
-    color: rgb(0, 0, 0);
+    color: gray;
 }

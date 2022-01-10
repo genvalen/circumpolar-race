@@ -12,12 +12,28 @@ app = Flask(__name__)
 app.config["CLIENT_XLSL"] = "static/client"
 
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def index():
-    try:
-        return render_template("index.html")
-    except Exception as e:
-        return str(e)
+    if request.method == "POST":
+        # Get user input: a team name.
+        team_name = request.form["Team Name"].lower()
+        team_name = urllib.parse.quote(team_name)  # URL friendly
+        try:
+            # Create excel spreadsheet.
+            get_spreadsheet(team_name)
+
+            # Send spreadsheet to user via browser.
+            directory = app.config["CLIENT_XLSL"] = "static/client"
+            filename = "results.xlsx"
+            resp = send_from_directory(directory, filename, as_attachment=True)
+            return resp
+        except Exception as e:
+            return str(e)
+    else:
+        try:
+            return render_template("index.html")
+        except Exception as e:
+            return str(e)
 
 
 def get_bs4_soup(url: str, group: str = "") -> str:
@@ -256,25 +272,6 @@ def get_spreadsheet(team_name):
     df.to_excel(output_file, index=1)
 
     return
-
-
-@app.route("/download", methods=["POST"])
-def export_spreadsheet():
-    # Get input from user: a team name.
-    team_name = request.form["Team Name"].lower()
-    team_name = urllib.parse.quote(team_name)  # make URL friendly
-
-    # Create excel spreadsheet for given team
-    get_spreadsheet(team_name)
-
-    # Return spreadsheet to user via browser
-    try:
-        filename = "results.xlsx"
-        return send_from_directory(
-            app.config["CLIENT_XLSL"], filename, as_attachment=True
-        )
-    except Exception as e:
-        return str(e)
 
 
 if __name__ == "__main__":
