@@ -1,12 +1,41 @@
+.footer{
+    position: fixed;  /*this position is not working ideally -- it should just stick to the bottom*/
+    text-align: left;
+    bottom: 0px;
+    width: 100%;
+}
+
+.footnote {
+    color: rgb(114, 98, 69);
+    font-weight: bold;
+}
+
 body {
     background: rgb(250, 250, 250);
     color: rgb(228, 119, 51);
 }
 
-.content {
-    color: black;
+p {
+    color: rgb(228, 119, 51);
+    font-weight: lighter;
 }
 
-.footnote {
-    color: gray;
+/* unvisited link */
+a:link {
+color: rgb(114, 98, 69);
+}
+
+/* visited link */
+a:visited {
+color: rgb(114, 98, 69);
+}
+
+/* mouse over link */
+a:hover {
+color: rgb(6, 48, 6);
+}
+
+/* selected link */
+a:active {
+color: rgb(16, 117, 16);
 }
