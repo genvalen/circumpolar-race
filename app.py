@@ -63,7 +63,7 @@ def get_region_paths(team_name) -> Dict[int, str]:
 
         # Search for URL to the next page
         match = tag.find_all(
-            name="a", class_="fs-lg d-block margin-t-10 margin-b-10 bold"
+            name="a", class_="fs-sm-2 d-block margin-t-10 margin-b-10 bold"
         )
 
         if match:

@@ -52,40 +52,40 @@ mock_html_2 = """
 
 mock_html_3 = """
 <td>
-<a href="/RaceGroups/95983/Groups/1" class="fs-lg d-block margin-t-10 margin-b-10 bold"></a> </td>
+<a href="/RaceGroups/95983/Groups/1" class="fs-sm-2 d-block margin-t-10 margin-b-10 bold"></a> </td>
 <td>Region 1 - Running</td>
 
-<td> <a href="/RaceGroups/95983/Groups/11" class="fs-lg d-block margin-t-10 margin-b-10 bold"></a> </td>
+<td> <a href="/RaceGroups/95983/Groups/11" class="fs-sm-2 d-block margin-t-10 margin-b-10 bold"></a> </td>
 <td>Region 11 - Running</td>
 
-<td> <a href="/RaceGroups/95983/Groups/10" class="fs-lg d-block margin-t-10 margin-b-10 bold"></a> </td>
+<td> <a href="/RaceGroups/95983/Groups/10" class="fs-sm-2 d-block margin-t-10 margin-b-10 bold"></a> </td>
 <td>Region 10 - Running</td>
 
-<td> <a href="/RaceGroups/95983/Groups/9" class="fs-lg d-block margin-t-10 margin-b-10 bold"></a> </td>
+<td> <a href="/RaceGroups/95983/Groups/9" class="fs-sm-2 d-block margin-t-10 margin-b-10 bold"></a> </td>
 <td>Region 9 - Running</td>
 
-<td> <a href="/RaceGroups/95983/Groups/8" class="fs-lg d-block margin-t-10 margin-b-10 bold"></a> </td>
+<td> <a href="/RaceGroups/95983/Groups/8" class="fs-sm-2 d-block margin-t-10 margin-b-10 bold"></a> </td>
 <td>Region 8 - Running</td>
 
-<td> <a href="/RaceGroups/95983/Groups/7" class="fs-lg d-block margin-t-10 margin-b-10 bold"></a> </td>
+<td> <a href="/RaceGroups/95983/Groups/7" class="fs-sm-2 d-block margin-t-10 margin-b-10 bold"></a> </td>
 <td>Region 7 - Running</td>
 
-<td> <a href="/RaceGroups/95983/Groups/6" class="fs-lg d-block margin-t-10 margin-b-10 bold"></a> </td>
+<td> <a href="/RaceGroups/95983/Groups/6" class="fs-sm-2 d-block margin-t-10 margin-b-10 bold"></a> </td>
 <td>Region 6 - Running</td>
 
-<td> <a href="/RaceGroups/95983/Groups/5" class="fs-lg d-block margin-t-10 margin-b-10 bold"></a> </td>
+<td> <a href="/RaceGroups/95983/Groups/5" class="fs-sm-2 d-block margin-t-10 margin-b-10 bold"></a> </td>
 <td>Region 5 - Running</td>
 
-<td> <a href="/RaceGroups/95983/Groups/4" class="fs-lg d-block margin-t-10 margin-b-10 bold"></a </td>
+<td> <a href="/RaceGroups/95983/Groups/4" class="fs-sm-2 d-block margin-t-10 margin-b-10 bold"></a </td>
 <td>Region 4 - Running</td>
 
-<td> <a href="/RaceGroups/95983/Groups/3" class="fs-lg d-block margin-t-10 margin-b-10 bold"></a> </td>
+<td> <a href="/RaceGroups/95983/Groups/3" class="fs-sm-2 d-block margin-t-10 margin-b-10 bold"></a> </td>
 <td>Region 3 - Running</td>
 
-<td> <a href="/RaceGroups/95983/Groups/2" class="fs-lg d-block margin-t-10 margin-b-10 bold"></a> </td>
+<td> <a href="/RaceGroups/95983/Groups/2" class="fs-sm-2 d-block margin-t-10 margin-b-10 bold"></a> </td>
 <td>Region 2 - Running</td>
 
-<td> <a href="/RaceGroups/95983/Groups/12" class="fs-lg d-block margin-t-10 margin-b-10 bold"></a> </td>
+<td> <a href="/RaceGroups/95983/Groups/12" class="fs-sm-2 d-block margin-t-10 margin-b-10 bold"></a> </td>
 <td>Region 12 - Running</td>
 """
 
