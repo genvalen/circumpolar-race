@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 
 import app
-import fixtures.MockBs4Objs as mock_html
+import fixtures.MockData as mock_html
 
 
 class TestAppFunctions(unittest.TestCase):
