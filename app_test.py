@@ -1,46 +1,15 @@
 import unittest
 from unittest.mock import patch
-import fixtures.MockBs4Objs as mock_html
+
 import app
+import fixtures.MockBs4Objs as mock_html
 
 
-class TestScript(unittest.TestCase):
+class TestAppFunctions(unittest.TestCase):
     maxDiff = None  # make failing tests easier to debug
-
-    def test_get_response_index(self):
-        # Verify content of the index page
-        app.app.testing = True
-        client = app.app.test_client()
-        url = "/"
-        resp = client.get(url)
-        testcases = (
-            (resp, b"Spreadsheet Generator"),
-            (resp, b"Please wait around 30 seconds"),
-        )
-
-        # Assertion.
-        for resp, expected in testcases:
-            with self.subTest():
-                self.assertTrue(expected in resp.data)
-        self.assertEqual(resp.status_code, 200)
-
-    @unittest.skip("WIP")
-    @patch("app.send_from_directory")
-    def test_post_response_index(self, mock_send):
-        # Verify that a spreadsheet has been exported
-        mock_send.return_value = "test send"
-        app.app.testing = True
-        client = app.app.test_client()
-        url = "/"
-        resp = client.post(url)
-
-        # Assertion.
-        # assert mock_send.called
-        self.assertEqual(resp.status_code, 405)
 
     @patch("app.get_bs4_soup")
     def test_endpoints_returned_by_get_region_paths(self, mock_get):
-
         expected = {
             1: "/RaceGroups/95983/Groups/1",
             2: "/RaceGroups/95983/Groups/2",
@@ -248,13 +217,49 @@ class TestScript(unittest.TestCase):
             with self.subTest('"result" -> "expected"'):
                 self.assertEqual(result, expected)
 
-    @unittest.skip("function removed for now")
-    def test_get_response_for_export_spreadsheet(self):
-        # Verify content of the download page
+
+class TestFlaskRequests(unittest.TestCase):
+    def setUp(self) -> None:
         app.app.testing = True
-        client = app.app.test_client()
+        self.test_client = app.app.test_client()
+
+    def test_get_response_from_index_page(self):
+        # Verify contents of the index page.
+        url = "/"
+        resp = self.test_client.get(url)
+        testcases = (
+            (resp, b"Spreadsheet Generator"),
+            (resp, b"Please wait around 30 seconds"),
+        )
+
+        # Assert that content is as expected.
+        for resp, expected in testcases:
+            with self.subTest():
+                self.assertTrue(expected in resp.data)
+        self.assertEqual(resp.status_code, 200)
+
+    @patch("app.send_from_directory")
+    @patch("app.get_spreadsheet")
+    def test_post_response_from_index_page(self, mock_speadsheet, mock_send):
+        # Verify that a spreadsheet has been exported.
+        mock_speadsheet.return_value = "blah"
+        mock_send.return_value = "blah"
+
+        url = "/"
+        data = {"Team Name": "mock name"}
+        resp = self.test_client.post(
+            url, data=data, content_type="application/x-www-form-urlencoded"
+        )
+
+        # Assertions.
+        self.assertTrue(mock_send.called)
+        self.assertEqual(resp.status_code, 200)
+
+    @unittest.skip("function has been removed for the time being")
+    def test_get_response_for_export_spreadsheet(self):
+        # Verify content of the download page.
         url = "/download"
-        resp = client.get(url)
+        resp = self.test_client.get(url)
 
         testcases = (
             (resp, b"Download"),
