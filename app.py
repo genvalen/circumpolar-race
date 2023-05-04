@@ -16,7 +16,7 @@ app.config["CLIENT_XLSL"] = "static/client"
 def index():
     if request.method == "POST":
         # Get user input: a team name.
-        team_name = request.form["Team Name"].lower()
+        team_name = request.form["team-name"].lower()
         team_name = urllib.parse.quote(team_name)  # URL friendly
         try:
             # Create excel spreadsheet.

@@ -1,44 +1,37 @@
 {% extends "base.html" %}
 
-{%  block title %}CRAW{%  endblock %}
+{% block title %}CRAW{% endblock %}
 
-{%  block body %}
-    <h1>Circumpolar Race Around the World</h1>
-    <h2>Participating Team Spreadsheet Generator</h2>
+{% block body %}
+  <div class="container">
+    <div class="header">
+      <h1 class="title">Circumpolar Race Around the World</h1>
+      <h2 class="subtitle">Participating Team Spreadsheet Generator</h2>
+    </div>
 
-    <!-- project summary -->
+    <!-- video -->
+    <div class="video-content">
+        <iframe width="760" height="315" src="https://www.youtube.com/embed/F0oui252e9k?autoplay=1&mute=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+
+    <!-- project summary-->
     <div class="content">
-        <iframe width="560" height="315" src="https://www.youtube.com/embed/F0oui252e9k?autoplay=1&mute=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-        <p>The Circumpolar Race Around the World (CRAW) is a virtual relay-race throughout 12 regions of the world.
-            <br>Teams race across 48,550 kilometers (30,167 miles) and complete the race in the course of one year.
-            <br>
-            <br> This webpage was made in commemoration of the team <em>In Jesper's Footsteps.</em>
-            <br>
-            <br>Enter a team name below to download a spreadsheet of their results for the event of:
-            <br>September 2020 - Sepetember 2021.
-        </p>
+      <p>The Circumpolar Race Around the World (CRAW) is a virtual relay-race simulating 12 regions of the world. In this event, teams are challenged to race across 48,550 kilometers (30,167 miles) throughout the course of one year. Click <a href="https://runsignup.com/Race/Results/95983/TeamResults">here</a> to view teams' results broken down by region.</p>
+    </p>
+      <p>Enter a team below to download a spreadsheet of their results for the <em>running event</em> of: <br>September 2020 - August 2021.</p>
     </div>
-
-    <br>
-    <br>
-    <br>
-
+<!--  -->
     <!-- download button -->
-    <div class="container" align="left">
-        <form method="post">
-            <input type="text" name="Team Name" placeholder="Enter your team name"/>
-            <button type="submit">Download</button>
-        </form>
+    <div class="form-container">
+      <form class="form" method="post">
+        <input class="form-input" type="text" name="team-name" placeholder="Enter your team name" required />
+        <button class="form-button" type="submit">Download</button>
+      </form>
     </div>
-
-    <br>
-    <br>
-    <br>
-    <br>
 
     <div class="footer">
-        <p>Visit <a href="url">https://runsignup.com/Race/Results/95983/TeamResults</a> to view team's results broken down by region.</p>
-        <p class="footnote"><i>Please wait around 30 seconds for the Excel spreadsheet to be generated.</i></p>
+      <!-- <p>Visit <a href="url">https://runsignup.com/Race/Results/95983/TeamResults</a> to view teams' results broken down by region.</p> -->
+      <p class="footnote"><i>Please wait around 30 seconds for the Excel spreadsheet to be generated.</i></p>
     </div>
-
-{%  endblock %}
+  </div>
+{% endblock %}

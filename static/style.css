@@ -1,8 +1,30 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.video-content {
+    padding-top: 20px;
+}
+
+.content {
+    width: 760px;
+    /* margin: auto; */
+    padding-top: 20px;
+    padding-bottom: 20px;
+    text-align: center;
+}
+
+.form-container {
+    padding-bottom: 20px;
+}
+
 .footer{
-    position: fixed;  /*this position is not working ideally -- it should just stick to the bottom*/
-    text-align: left;
+    /* position: fixed; */
     bottom: 0px;
-    width: 100%;
+    width: 760px;
+    text-align: center;
 }
 
 .footnote {
@@ -13,6 +35,13 @@
 body {
     background: rgb(250, 250, 250);
     color: rgb(228, 119, 51);
+    padding-left: 20%;
+    padding-right: 20%;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    text-align: center;
+    line-height: 150%;
+    font-size: 18px;
 }
 
 p {
@@ -22,20 +51,21 @@ p {
 
 /* unvisited link */
 a:link {
-color: rgb(114, 98, 69);
+    color: rgb(114, 98, 69);
+    font-weight: ligher;
 }
 
 /* visited link */
 a:visited {
-color: rgb(114, 98, 69);
+    color: rgb(114, 98, 69);
 }
 
 /* mouse over link */
 a:hover {
-color: rgb(6, 48, 6);
+    color: rgb(6, 48, 6);
 }
 
 /* selected link */
 a:active {
-color: rgb(16, 117, 16);
+    color: rgb(16, 117, 16);
 }
