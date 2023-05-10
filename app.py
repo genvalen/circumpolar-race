@@ -4,27 +4,28 @@ from bs4 import BeautifulSoup
 import requests
 from collections import defaultdict
 from flask import Flask, render_template, request, send_from_directory
-import urllib.parse
+from utils.utils import slugify, style_spreadsheet
 
 app = Flask(__name__)
 
 # the excel spreadsheet generated gets saved here:
 app.config["CLIENT_XLSL"] = "static/client"
+BASE_OUTPUT_FILENAME = "2020-CRAW"
 
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
         # Get user input: a team name.
-        team_name = request.form["Team Name"].lower()
-        team_name = urllib.parse.quote(team_name)  # URL friendly
+        team_name = request.form["Team Name"].strip().lower()
+        team_name = slugify(team_name)
         try:
             # Create excel spreadsheet.
-            get_spreadsheet(team_name)
+            generate_spreadsheet(team_name)
 
             # Send spreadsheet to user via browser.
             directory = app.config["CLIENT_XLSL"] = "static/client"
-            filename = "results.xlsx"
+            filename = f"{BASE_OUTPUT_FILENAME}-{team_name}.xlsx"
             resp = send_from_directory(directory, filename, as_attachment=True)
             return resp
         except Exception as e:
@@ -226,7 +227,7 @@ def get_participant_data(
     return participant_names, race_results, participant_identifiers
 
 
-def get_spreadsheet(team_name):
+def generate_spreadsheet(team_name):
     # Get data for participants in the team specified.
     names, src_data, _ = get_participant_data(team_name)
 
@@ -262,14 +263,23 @@ def get_spreadsheet(team_name):
     df.index.name = "Rank"
 
     # Add row: Miles Per Region
-    totals_per_region = ["Miles Per Region"]
+    totals_per_region = ["Total Miles Per Region"]
     row_values = list(df.sum(axis=0, numeric_only=True))
     totals_per_region.extend(row_values)
-    df.loc[len(df.index) + 1] = totals_per_region
+    df.loc[df.index[-1] + 1] = totals_per_region
+
+    # Remove index of newly created row
+    df.rename({df.index[-1]: " "}, axis="index", inplace=True)
+
+    # Customize filename
+    output_file = f"static/client/{BASE_OUTPUT_FILENAME}-{team_name}.xlsx"
+    sheet_name = "2020 CRAW"
 
     # Convert df to excel file
-    output_file = r"static/client/results.xlsx"
-    df.to_excel(output_file, index=1)
+    df.to_excel(output_file, index=1, sheet_name=sheet_name)
+
+    # Add style to excel spreadsheet
+    style_spreadsheet(output_file, sheet_name=sheet_name)
 
     return
 
