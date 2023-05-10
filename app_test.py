@@ -239,7 +239,7 @@ class TestFlaskRequests(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
     @patch("app.send_from_directory")
-    @patch("app.get_spreadsheet")
+    @patch("app.generate_spreadsheet")
     def test_post_response_from_index_page(self, mock_speadsheet, mock_send):
         # Verify that a spreadsheet has been exported.
         mock_speadsheet.return_value = "blah"
