@@ -2,23 +2,39 @@
 
 
 
-## Context
-This project is based around the **Circumpolar Race Around the World 2020** event. This was a year-long virtual racing event where participants formed teams and committed to a year of walking/racing, and uploaded their daily mileage on this [site](https://runsignup.com/Race/CHH/AnywhereAnyPlace/CircumpolarRaceAroundtheWorld).
+## Overview
+The **Circumpolar Race Around the World** (CRAW) is a virtual relay-race event where participants form teams of 10 and challenge themselves to walk or race across 30,167 miles (48,550 kilometers) in the span of one year. Each team member's daily activity counts towards their team goal of completing 30,167 miles, cumulatively. Participants upload their daily activity [here](https://runsignup.com/Race/CHH/AnywhereAnyPlace/CircumpolarRaceAroundtheWorld).
 
-In brief, the program does the following:
-* prompts the user to enter a team name
-* exports an Excel spreadsheet summarizing and ranking the results of participants under this team name
+The [**CRAW spreadsheet generator**](https://craw-spreadsheet-generator.up.railway.app/) is a web app, now available to visit.
 
-**Note:** this program is a WIP and not yet fully functional. To try the program out locally, use the following test team as the input: In Jesper's Footsteps. 
+It does the following:
+* prompts user to enter a team name from the running group
+* exports an Excel spreadsheet summarizing and ranking the results of participants in this team
 
-Data for the test team's output is sourced [here](https://runsignup.com/RaceGroups/95983?groupName=In+Jesper%27s+Footsteps).
+An example output spreadsheet:
+![Screenshot](images/craw-spreadsheet-example-1.png)
+
+An example output spreadsheet with color + headers + deduplication
+(implementation still a WIP):
+![Screenshot](images/craw-spreadsheet-example-2.png)
+
+This webpage was created to commemorate the team, *In Jesper's Footsteps*.
+
+Data for this team's output is sourced [here](https://runsignup.com/RaceGroups/95983?groupName=In+Jesper%27s+Footsteps).
+
+<!-- ## Technical details -->
+
+## Development Requirements
+*For a full list, see the `requirements.txt`*
+* Bs4
+* Flask
+* Openpyxl
+* Pandas
+* Python 3.9+
+* Requests
 
 
-## Requirements
-* See `requirements.txt`
-* Python 3.9.7+
-
-## How to Use
+## Developement
 Run the app: `$ python app.py`
 
 Test the app: `$ python -m unittest app_test.py`
