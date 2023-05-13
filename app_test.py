@@ -246,7 +246,7 @@ class TestFlaskRequests(unittest.TestCase):
         mock_send.return_value = "bar"
 
         url = "/"
-        data = {"Team Name": "mock name"}
+        data = {"team-name": "mock name"}
         resp = self.test_client.post(
             url, data=data, content_type="application/x-www-form-urlencoded"
         )
