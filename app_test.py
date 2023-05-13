@@ -238,13 +238,12 @@ class TestFlaskRequests(unittest.TestCase):
                 self.assertTrue(expected in resp.data)
         self.assertEqual(resp.status_code, 200)
 
-    @unittest.skip("The mock send isn't getting called.")
     @patch("app.send_from_directory")
-    @patch("app.get_spreadsheet")
+    @patch("app.generate_spreadsheet")
     def test_post_response_from_index_page(self, mock_speadsheet, mock_send):
         # Verify that a spreadsheet has been exported.
-        mock_speadsheet.return_value = "blah"
-        mock_send.return_value = "blah"
+        mock_speadsheet.return_value = "foo"
+        mock_send.return_value = "bar"
 
         url = "/"
         data = {"Team Name": "mock name"}
@@ -272,6 +271,9 @@ class TestFlaskRequests(unittest.TestCase):
             with self.subTest():
                 self.assertTrue(expected in resp.data)
         self.assertEqual(resp.status_code, 200)
+
+    # TODO: Add tests for utilities: assert that spreadsheet is styled correctly.
+        # add test for generate_spreadsheet.
 
 
 if __name__ == "__main__":
