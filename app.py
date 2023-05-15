@@ -1,15 +1,20 @@
-from typing import Dict, Tuple, Set, List
-import pandas as pd
-from bs4 import BeautifulSoup
+import os
 import requests
+import pandas as pd
+from typing import Dict, Tuple, Set, List
+from bs4 import BeautifulSoup
 from collections import defaultdict
 from flask import Flask, render_template, request, send_from_directory
+
 from utils.utils import slugify, style_spreadsheet
+
 
 app = Flask(__name__)
 
-# the excel spreadsheet generated gets saved here:
-app.config["CLIENT_XLSL"] = "static/client"
+# Construct the paths for storing and retrieving the generated spreadsheet
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, 'static')
+EXCEL_DIR = os.path.join(STATIC_DIR, 'client')  # file is stored here.
 BASE_OUTPUT_FILENAME = "2020-CRAW"
 
 
@@ -23,10 +28,9 @@ def index():
             # Create excel spreadsheet.
             generate_spreadsheet(team_name)
 
-            # Send spreadsheet to user via browser.
-            directory = app.config["CLIENT_XLSL"] = "static/client"
+            # Construct filename and send file to browser.
             filename = f"{BASE_OUTPUT_FILENAME}-{team_name}.xlsx"
-            resp = send_from_directory(directory, filename, as_attachment=True)
+            resp = send_from_directory(EXCEL_DIR, filename, as_attachment=True)
             return resp
         except Exception as e:
             return str(e)
@@ -272,14 +276,15 @@ def generate_spreadsheet(team_name):
     df.rename({df.index[-1]: " "}, axis="index", inplace=True)
 
     # Customize filename
-    output_file = f"static/client/{BASE_OUTPUT_FILENAME}-{team_name}.xlsx"
+    filename = f"{BASE_OUTPUT_FILENAME}-{team_name}.xlsx"
+    filepath = os.path.join(EXCEL_DIR, filename)
     sheet_name = "2020 CRAW"
 
     # Convert df to excel file
-    df.to_excel(output_file, index=1, sheet_name=sheet_name)
+    df.to_excel(filepath, index=1, sheet_name=sheet_name)
 
     # Add style to excel spreadsheet
-    style_spreadsheet(output_file, sheet_name=sheet_name)
+    style_spreadsheet(filepath, sheet_name=sheet_name)
 
     return
 
