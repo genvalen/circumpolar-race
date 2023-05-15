@@ -11,6 +11,8 @@ It does the following:
 * prompts user to enter a team name from a running group
 * exports an Excel spreadsheet summarizing and ranking the results of participants in this team
 
+![example-gif](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMmFjOTdiMjNhNWZlMGQwNGQwMGNlZWE2NTk1OGE3ZGFlOGI5ODgxMiZlcD12MV9pbnRlcm5hbF9naWZzX2dpZklkJmN0PWc/L4fGm31llIJEWRYmLc/giphy.gif)
+
 An example output spreadsheet:
 ![Screenshot](images/craw-spreadsheet-example-1.png)
 
