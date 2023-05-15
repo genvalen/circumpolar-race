@@ -8,7 +8,7 @@ The **Circumpolar Race Around the World** (CRAW) is a virtual relay-race event w
 The [**CRAW spreadsheet generator**](https://craw-spreadsheet-generator.up.railway.app/) is a web app, now available to visit.
 
 It does the following:
-* prompts user to enter a team name from the running group
+* prompts user to enter a team name from a running group
 * exports an Excel spreadsheet summarizing and ranking the results of participants in this team
 
 An example output spreadsheet:

@@ -11,7 +11,7 @@ from utils.utils import slugify, style_spreadsheet
 
 app = Flask(__name__)
 
-# Construct the paths for storing and retrieving the generated spreadsheet
+# Construct D for storing and retrieving the generated spreadsheet
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
 EXCEL_DIR = os.path.join(STATIC_DIR, 'client')  # file is stored here.
@@ -23,15 +23,17 @@ def index():
     if request.method == "POST":
         # Get user input: a team name.
         team_name = request.form["team-name"].lower()
-        team_name = slugify(team_name)  # URL and filename friendly
+        team_name = slugify(team_name)  # URL and filename friendly.
         try:
             # Create excel spreadsheet.
             generate_spreadsheet(team_name)
 
             # Construct filename and send file to browser.
             filename = f"{BASE_OUTPUT_FILENAME}-{team_name}.xlsx"
-            resp = send_from_directory(EXCEL_DIR, filename, as_attachment=True)
-            return resp
+            if os.path.isfile(os.path.join(EXCEL_DIR, filename)):
+                return send_from_directory(EXCEL_DIR, filename, as_attachment=True)
+            else:
+                return 'File not found!'
         except Exception as e:
             return str(e)
     else:
@@ -276,17 +278,17 @@ def generate_spreadsheet(team_name):
     df.rename({df.index[-1]: " "}, axis="index", inplace=True)
 
     # Customize filename
+    os.makedirs(EXCEL_DIR, exist_ok=True)  # Check dir exists
     filename = f"{BASE_OUTPUT_FILENAME}-{team_name}.xlsx"
     filepath = os.path.join(EXCEL_DIR, filename)
-    sheet_name = "2020 CRAW"
 
     # Convert df to excel file
-    df.to_excel(filepath, index=1, sheet_name=sheet_name)
+    df.to_excel(filepath, index=1, sheet_name=BASE_OUTPUT_FILENAME)
 
     # Add style to excel spreadsheet
-    style_spreadsheet(filepath, sheet_name=sheet_name)
+    style_spreadsheet(filepath, sheet_name=BASE_OUTPUT_FILENAME)
 
-    return
+    return "The spreadsheet was generated successfully."
 
 
 if __name__ == "__main__":
