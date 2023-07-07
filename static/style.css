@@ -29,7 +29,8 @@
 
 .footnote {
     color: rgb(114, 98, 69);
-    font-weight: bold;
+    font-family: 'Source Sans 3', sans-serif;
+    font-weight: bolder;
 }
 
 body {
@@ -41,11 +42,13 @@ body {
     padding-bottom: 20px;
     text-align: center;
     line-height: 150%;
+    font-family: 'Fira Sans', sans-serif;
     font-size: 18px;
 }
 
 p {
     color: rgb(228, 119, 51);
+    font-family: 'Source Sans 3', sans-serif;
     font-weight: lighter;
 }
 
