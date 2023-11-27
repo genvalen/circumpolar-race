@@ -85,4 +85,5 @@ def style_spreadsheet(path, sheet_name):
 
 
 if __name__ == "__main__":
-    style_spreadsheet("path", "2020 CRAW")
+    style_spreadsheet("fixtures/mock_directory/mock_spreadsheet.xlsx", "2020 CRAW")
+    print("Spreasheet has been styled.")
