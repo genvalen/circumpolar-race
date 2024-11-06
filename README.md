@@ -5,7 +5,7 @@
 ## Overview
 The **Circumpolar Race Around the World** (CRAW) is a virtual relay-race event where participants form teams of 10 and challenge themselves to walk or race across 30,167 miles (48,550 kilometers) in the span of one year. Each team member's daily activity counts towards their team goal of completing 30,167 miles, cumulatively. Participants upload their daily activity [here](https://runsignup.com/Race/CHH/AnywhereAnyPlace/CircumpolarRaceAroundtheWorld).
 
-The [**CRAW spreadsheet generator**](https://craw-spreadsheet-generator.up.railway.app/) is a web app, now available to visit.
+The [**CRAW spreadsheet generator**](https://circumpolar-race-fa0c42a71788.herokuapp.com/) is a web app, now available to visit.
 
 It does the following:
 * prompts user to enter a team name from a running group
