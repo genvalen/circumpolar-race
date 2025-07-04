@@ -229,7 +229,7 @@ class TestFlaskRequests(unittest.TestCase):
         resp = self.test_client.get(url)
         testcases = (
             (resp, b"Spreadsheet Generator"),
-            (resp, b"Please wait around 30 seconds"),
+            (resp, b"Please wait a few seconds"),
         )
 
         # Assert that content is as expected.
@@ -239,10 +239,12 @@ class TestFlaskRequests(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
 
     @patch("app.send_from_directory")
+    @patch("app.os.path.isfile")
     @patch("app.generate_spreadsheet")
-    def test_post_response_from_index_page(self, mock_speadsheet, mock_send):
+    def test_post_response_from_index_page(self, mock_speadsheet, mock_is_file, mock_send):
         # Verify that a spreadsheet has been exported.
         mock_speadsheet.return_value = "foo"
+        mock_is_file.return_value = True
         mock_send.return_value = "bar"
 
         url = "/"
