@@ -188,9 +188,9 @@ def get_participant_data(
     # Saving names ensures HTTP call is made only once per participant
     # while still giving program access to full names as often as needed.
 
-    participants_seen = {}
+    scraped_name_to_full_name_map = {}
 
-    # Iterate through designated webpage for each region in the race (12).
+    # Iterate through webpage for each region in the race (12 regions).
     for region, path in region_url_dict.items():
         url = url_base + path
         soup = get_bs4_soup(url)
@@ -200,14 +200,15 @@ def get_participant_data(
         # Iterate through each particpant in the current region.
         # Scrape name and HREF for each.
         # HREF - used in HTTP call returning participant's data for cur region.
-        # Name - used w/ `participants_seen` to prevent over-use of HTTP calls.
+        # Name - used w/ `scraped_name_to_full_name_map` to prevent over-use of HTTP calls.
+
         for tag in soup.find_all(
             name="a", class_="rsuBtn rsuBtn--text-whitebg rsuBtn--xs margin-r-0"
         ):
             href = tag["href"]
-            name = tag.text.strip()  # incomplete name -> first name/last initial
+            scraped_name = tag.text.strip()  # incomplete name -> first scraped_name/last initial
 
-            if name not in participants_seen:
+            if scraped_name not in scraped_name_to_full_name_map:
 
                 # Make HTTP call returning: full name, age, gender, city, state.
                 identifiers = get_identifiers(href)
@@ -217,18 +218,18 @@ def get_participant_data(
 
                 # Update dict of participants seen.
                 full_name = " ".join(identifiers[:2])  # full name
-                participants_seen[name] = full_name
+                scraped_name_to_full_name_map[scraped_name] = full_name
 
             # Make HTTP call returning: total miles
             # Update region_results with participant's total miles.
-            full_name = participants_seen[name]
+            full_name = scraped_name_to_full_name_map[scraped_name]
             region_results[full_name] = get_miles(href)
 
         # Update overall race results with results from current region.
         race_results[region] = region_results
 
     # Create set of full names of all participants in the race.
-    participant_names = set(participants_seen.values())
+    participant_names = set(scraped_name_to_full_name_map.values())
 
     return participant_names, race_results, participant_identifiers
 
