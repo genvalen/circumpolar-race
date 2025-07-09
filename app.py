@@ -8,6 +8,12 @@ from flask import Flask, render_template, request, send_from_directory
 
 from utils.utils import slugify, style_spreadsheet
 
+import time
+import random
+import logging
+
+logger = logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -154,10 +160,16 @@ def get_miles(href: str) -> float:
     data = f"userIdCsv={user_id}"
 
     # Make HTTP request.
-    resp = requests.post(url, headers=headers, data=data)
-
     try:
-        return resp.json()["results"][0]["result_tally_value"]
+        for retry_attempt in range(3):  # retry logic in case of rate limitation.
+            resp = requests.post(url, headers=headers, data=data)
+            if resp.status_code == 429:  # too many requests
+                logger.warning(f"Rate limit hit on url: {url}. Retrying after cooldown.")
+                wait = random.uniform(1, 5) * (2 * retry_attempt)
+                time.sleep(wait)
+
+            elif resp.status_code == 200:
+                return resp.json()["results"][0]["result_tally_value"]
     except Exception as e:
         return str(e)
 
@@ -230,7 +242,7 @@ def get_participant_data(
 
     # Create set of full names of all participants in the race.
     participant_names = set(scraped_name_to_full_name_map.values())
-
+    logger.info("we have collected all of the participant data needed.")
     return participant_names, race_results, participant_identifiers
 
 
