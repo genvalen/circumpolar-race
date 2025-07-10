@@ -160,18 +160,27 @@ def get_miles(href: str) -> float:
     data = f"userIdCsv={user_id}"
 
     # Make HTTP request.
-    try:
-        for retry_attempt in range(3):  # retry logic in case of rate limitation.
+    max_attempts = 3
+    for retry_attempt in range(1, max_attempts+1):  # retry logic in case of rate limitation.
+        try:
             resp = requests.post(url, headers=headers, data=data)
-            if resp.status_code == 429:  # too many requests
-                logger.warning(f"Rate limit hit on url: {url}. Retrying after cooldown.")
-                wait = random.uniform(1, 5) * (2 * retry_attempt)
-                time.sleep(wait)
-
-            elif resp.status_code == 200:
+            if resp.status_code == 200:
                 return resp.json()["results"][0]["result_tally_value"]
-    except Exception as e:
-        return str(e)
+
+            elif resp.status_code == 429:  # too many requests
+                wait = random.uniform(1, 2) * (2 ** retry_attempt)
+                logger.warning(f"Rate limit hit on url: {url}. Retrying after {wait:.2f} seconds.")
+                time.sleep(wait)
+            else:
+                logger.warning("Error while fetching url {url}: {e}")
+                break
+
+        except Exception as e:
+            logger.error(f"Error while fetching url {url}: {e}")
+
+        logger.warning(f"Max retries exceeded for fetching miles from url: {url}. Data from this request will be skipped.")
+        return 0
+
 
 
 def get_participant_data(
@@ -203,11 +212,17 @@ def get_participant_data(
     scraped_name_to_full_name_map = {}
 
     # Iterate through webpage for each region in the race (12 regions).
+    start_time = time.perf_counter()
+
     for region, path in region_url_dict.items():
         url = url_base + path
         soup = get_bs4_soup(url)
 
         region_results = {}
+
+        # Add sleep to avoid rate limit error
+        wait = random.uniform(1,2)
+        time.sleep(wait)
 
         # Iterate through each particpant in the current region.
         # Scrape name and HREF for each.
@@ -242,7 +257,9 @@ def get_participant_data(
 
     # Create set of full names of all participants in the race.
     participant_names = set(scraped_name_to_full_name_map.values())
-    logger.info("we have collected all of the participant data needed.")
+
+    logger.info(f"we have collected all of the participant data needed in {time.perf_counter() - start_time}.")
+
     return participant_names, race_results, participant_identifiers
 
 
