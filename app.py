@@ -258,7 +258,7 @@ def get_participant_data(
     # Create set of full names of all participants in the race.
     participant_names = set(scraped_name_to_full_name_map.values())
 
-    logger.info(f"we have collected all of the participant data needed in {time.perf_counter() - start_time}.")
+    logger.info(f"we have collected all of the participant data needed in {time.perf_counter() - start_time:.2f}.")
 
     return participant_names, race_results, participant_identifiers
 
