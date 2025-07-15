@@ -32,7 +32,7 @@ Data for this team's output is sourced [here](https://runsignup.com/RaceGroups/9
 * Flask
 * Openpyxl
 * Pandas
-* Python 3.9+
+* Python >=3.9, <3.11
 * Requests
 
 
