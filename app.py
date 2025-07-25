@@ -1,5 +1,7 @@
 import os
 import requests
+import aiohttp
+import asyncio
 import pandas as pd
 from typing import Dict, Tuple, Set, List
 from bs4 import BeautifulSoup
@@ -49,13 +51,15 @@ def index():
             return str(e)
 
 
-def get_bs4_soup(url: str, group: str = "") -> str:
+async def get_bs4_soup(url: str, group: str = "") -> str:
     """Get HTML and convert into bs4 soup."""
-    url += group
-    resp = requests.get(url).text
-    soup = BeautifulSoup(resp, "lxml")
-    return soup
+    async with aiohttp.ClientSession() as session:
+        url += group
 
+        async with session.get(url) as resp:
+            html = await resp.text()
+            soup = BeautifulSoup(html, "lxml")
+            return soup
 
 def get_region_paths(team_name) -> Dict[int, str]:
     """Return a dictionary where key is a region number and value is
@@ -202,14 +206,8 @@ def get_participant_data(
     race_results = {}
     participant_identifiers = []
 
-    # Save scraped version of particpants' names and map them to full names
-    # (eg., Carol G --> Carol Grant).
-    # Incomplete names are scraped from website's HTML.
-    # Full names are returned by `get_identifiers` in an HTTP request.
-    # Saving names ensures HTTP call is made only once per participant
-    # while still giving program access to full names as often as needed.
-
     scraped_name_to_full_name_map = {}
+    region_to_scraped_name_href_map = {}
 
     # Iterate through webpage for each region in the race (12 regions).
     start_time = time.perf_counter()
@@ -232,8 +230,10 @@ def get_participant_data(
         for tag in soup.find_all(
             name="a", class_="rsuBtn rsuBtn--text-whitebg rsuBtn--xs margin-r-0"
         ):
+
             href = tag["href"]
             scraped_name = tag.text.strip()  # incomplete name -> first scraped_name/last initial
+            region_to_scraped_name_href_map[region] = {scraped_name: href}
 
             if scraped_name not in scraped_name_to_full_name_map:
 
