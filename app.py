@@ -94,7 +94,7 @@ def get_region_paths(team_name) -> Dict[int, str]:
     return region_url_dict
 
 
-def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
+async def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
     """Make HTTP request returning the following particpant
     identifiers: first name, last name, gender, age, city, and state.
     """
@@ -121,20 +121,22 @@ def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
     }
 
     # Prepare URL for HTTP request: parse href for query details.
-    url_base = "https://runsignup.com/Race/Results/95983/LookupParticipant/"
+    url = "https://runsignup.com/Race/Results/95983/LookupParticipant/"
     result_id, user_id = href.split("=")[1].split("#U")
     payload = {"resultSetId": result_id, "userId": user_id}
 
-    # Make HTTP request.
-    resp = requests.get(url_base, params=payload, headers=headers)
 
-    try:
-        resp_dict = resp.json()["participants"][0]
-        keys = ["first_name", "last_name", "gender", "age", "city", "state"]
-        data = tuple(resp_dict[k] for k in keys)
-        return data
-    except Exception as e:
-        return str(e)
+    # Make aiohttp request.
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers, params=payload) as resp:
+            try:
+                resp = await resp.json()
+                resp_dict = resp["participants"][0]
+                keys = ["first_name", "last_name", "gender", "age", "city", "state"]
+                data = tuple(resp_dict[k] for k in keys)
+                return data
+            except Exception as e:
+                return str(e)
 
 
 def get_miles(href: str) -> float:

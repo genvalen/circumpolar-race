@@ -9,6 +9,8 @@ import fixtures.MockData as mock_html
 
 
 class TestAsyncAppFunctions(unittest.IsolatedAsyncioTestCase):
+    maxDiff = None  # make failing tests easier to debug
+
     @patch("aiohttp.ClientSession.get")
     async def test_get_bs4_soup_returns_soup(self, mock_get):
         mock_html = "<html><body><p>Mock Team Name</p></body></html>"
@@ -28,6 +30,41 @@ class TestAsyncAppFunctions(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(bs4_soup, BeautifulSoup)
         self.assertEqual(bs4_soup.text, expected_text)
 
+
+    @patch("app.aiohttp.ClientSession.get")
+    async def test_info_returned_by_get_identifiers_is_correct(self, mock_get):
+        input_href = "mock/href/query/?resultSetId=212380#U44542375"
+        expected = ("Lin Manuel", "Miranda", "M", 54, "Munster", "IN")
+        mock_json_response = {
+            "participants": [
+                {
+                    "user_id": 44542375,
+                    "first_name": "Lin Manuel",
+                    "last_name": "Miranda",
+                    "event_id": 420484,
+                    "event": "Region 1 - Running",
+                    "bib_num": "2164",
+                    "profile_filename_url": None,
+                    "registration_id": 45016484,
+                    "gender": "M",
+                    "age": 54,
+                    "city": "Munster",
+                    "state": "IN",
+                }
+            ]
+        }
+
+        # Configure mock context manager.
+        mock_resp = AsyncMock()
+        mock_resp.json = AsyncMock(return_value=mock_json_response)
+
+        # Configue mock object's return value.
+        mock_get.return_value.__aenter__.return_value = mock_resp
+
+        result = await app.get_identifiers(input_href)
+
+        # Assertion.
+        self.assertEqual(result, expected)
 class TestAppFunctions(unittest.TestCase):
     maxDiff = None  # make failing tests easier to debug
 
@@ -54,35 +91,6 @@ class TestAppFunctions(unittest.TestCase):
 
         # Assertion.
         self.assertDictEqual(app.get_region_paths("mock_team_name"), expected)
-
-    @patch("app.requests.get")
-    def test_info_returned_by_get_identifiers_is_correct(self, mock_get):
-        input_href = "mock/href/query/?resultSetId=212380#U44542375"
-        expected = ("Lin Manuel", "Miranda", "M", 54, "Munster", "IN")
-        mock_json_response = {
-            "participants": [
-                {
-                    "user_id": 44542375,
-                    "first_name": "Lin Manuel",
-                    "last_name": "Miranda",
-                    "event_id": 420484,
-                    "event": "Region 1 - Running",
-                    "bib_num": "2164",
-                    "profile_filename_url": None,
-                    "registration_id": 45016484,
-                    "gender": "M",
-                    "age": 54,
-                    "city": "Munster",
-                    "state": "IN",
-                }
-            ]
-        }
-
-        # Configue Mock object's return value.
-        mock_get.return_value.json.return_value = mock_json_response
-
-        # Assertion.
-        self.assertEqual(app.get_identifiers(input_href), expected)
 
     @unittest.skip("Update to be async/ work with coroutine object")
     @patch("app.requests.post")
