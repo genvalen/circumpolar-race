@@ -139,7 +139,7 @@ async def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
                 return str(e)
 
 
-def get_miles(href: str) -> float:
+async def get_miles(href: str, max_retries=3) -> float:
     """Make HTTP request returning the total number of miles completed
     by a participant at the end of the region.
     """
@@ -165,28 +165,33 @@ def get_miles(href: str) -> float:
     # Prepare data for HTTP request.
     data = f"userIdCsv={user_id}"
 
-    # Make HTTP request.
-    max_attempts = 3
-    for retry_attempt in range(1, max_attempts+1):  # retry logic in case of rate limitation.
-        try:
-            resp = requests.post(url, headers=headers, data=data)
-            if resp.status_code == 200:
-                return resp.json()["results"][0]["result_tally_value"]
+    # Make aiohttp request.
+    async with aiohttp.ClientSession() as session:
+        for retry_attempt in range(0, max_retries+1):  # retry logic in case of rate limitation.
+            try:
+                async with session.post(url, headers=headers, data=data) as resp:
+                    if resp.status_code == 200:
+                        json_data = await resp.json()
+                        if retry_attempt == 0:
+                            logger.info(f"Successful request for url: {url}. Status: Proccessed.")
+                        else:
+                            logger.warning(f"Successful request for url: {url}. Status: Proccessed.")
+                        return json_data["results"][0]["result_tally_value"]
 
-            elif resp.status_code == 429:  # too many requests
-                wait = random.uniform(1, 2) * (2 ** retry_attempt)
-                logger.warning(f"Rate limit hit on url: {url}. Retrying after {wait:.2f} seconds.")
-                time.sleep(wait)
-            else:
-                logger.warning("Error while fetching url {url}: {e}")
-                break
+                    elif resp.status_code == 429:  # too many requests
+                        wait = random.uniform(1, 2) * (2 ** retry_attempt)
+                        logger.warning(f"Rate limit hit on url: {url}. Retrying after {wait:.2f} seconds.")
+                        await asyncio.sleep(wait)
 
-        except Exception as e:
-            logger.error(f"Error while fetching url {url}: {e}")
+                    else:
+                        logger.error(f"Error while fetching url {url}: {e}")
+                        break
 
-    logger.warning(f"Max retries exceeded for fetching miles from url: {url}. Data from this request will be skipped.")
+            except Exception as e:
+                logger.error(f"Error while fetching url {url}: {e}")
+
+    logger.warning(f"Max retries ({max_retries}) exceeded for fetching miles from url: {url}. Data from this request will be skipped.")
     return 0
-
 
 
 def get_participant_data(

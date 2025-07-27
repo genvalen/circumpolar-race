@@ -30,10 +30,9 @@ class TestAsyncAppFunctions(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(bs4_soup, BeautifulSoup)
         self.assertEqual(bs4_soup.text, expected_text)
 
-
     @patch("app.aiohttp.ClientSession.get")
     async def test_info_returned_by_get_identifiers_is_correct(self, mock_get):
-        input_href = "mock/href/query/?resultSetId=212380#U44542375"
+        input_href = "/mock/href/query/?resultSetId=212380#U44542375"
         expected = ("Lin Manuel", "Miranda", "M", 54, "Munster", "IN")
         mock_json_response = {
             "participants": [
@@ -65,6 +64,58 @@ class TestAsyncAppFunctions(unittest.IsolatedAsyncioTestCase):
 
         # Assertion.
         self.assertEqual(result, expected)
+
+    @patch("app.logger")
+    @patch("asyncio.sleep")
+    @patch("aiohttp.ClientSession.post")
+    async def test_miles_returned_by_get_miles_is_correct(self, mock_post, mock_sleep, mock_logger):
+        input_href_200 = "/mock_200/href/query//?resultSetId=212380#U44542375"
+        input_href_429 = "/mock_429/href/query//?resultSetId=212380#U44542375"
+        expected_200 = 442.71
+        expected_429 = 0
+        mock_json_response = {
+            "mock_key1": {},
+            "mock_key2": {},
+            "results": [
+                {
+                    "result_tally_value": 442.71,
+                    "result_tally_label": "Distance in Miles",
+                    "result_tally_value_in_meters": 712472.683,
+                }
+            ],
+        }
+
+        mock_sleep.return_value = None # mock sleep to speed up testing output.
+        mock_logger.return_value = None  # mock logger to clean up test output.
+
+        # Configure mock context manager.
+        mock_resp_200 = AsyncMock()
+        mock_resp_200.json = AsyncMock(return_value=mock_json_response)
+        mock_resp_200.status_code = 200
+
+        mock_resp_429 = AsyncMock()
+        mock_resp_429.json = None
+        mock_resp_429.status_code = 429
+
+        # Configue mock object's return value for 1 aiohttp request plus n retries.
+        mock_post.side_effect = [
+            AsyncMock(__aenter__ = AsyncMock(return_value=mock_resp_429)),  # initial request for input_href_429
+            AsyncMock(__aenter__ = AsyncMock(return_value=mock_resp_429)),  # first retry
+            AsyncMock(__aenter__ = AsyncMock(return_value=mock_resp_429)),  # second retry
+            AsyncMock(__aenter__ = AsyncMock(return_value=mock_resp_429)),  # initial request for input_href_200
+            AsyncMock(__aenter__ = AsyncMock(return_value=mock_resp_429)),  # first retry
+            AsyncMock(__aenter__ = AsyncMock(return_value=mock_resp_429)),  # second retry
+            AsyncMock(__aenter__ = AsyncMock(return_value=mock_resp_200)),  # third retry
+        ]
+
+        # Assertions.
+        result = await app.get_miles(input_href_429, max_retries=2)
+        self.assertEqual(result, expected_429)
+
+        result = await app.get_miles(input_href_200, max_retries=3)
+        self.assertEqual(result, expected_200)
+
+
 class TestAppFunctions(unittest.TestCase):
     maxDiff = None  # make failing tests easier to debug
 
@@ -92,32 +143,6 @@ class TestAppFunctions(unittest.TestCase):
         # Assertion.
         self.assertDictEqual(app.get_region_paths("mock_team_name"), expected)
 
-    @unittest.skip("Update to be async/ work with coroutine object")
-    @patch("app.requests.post")
-    def test_miles_returned_by_get_miles_is_correct(self, mock_post):
-        input_href = "mock/href/query//?resultSetId=212380#U44542375"
-        expected = 442.71
-        mock_json_response = {
-            "mock_key1": {},
-            "mock_key2": {},
-            "results": [
-                {
-                    "result_tally_value": 442.71,
-                    "result_tally_label": "Distance in Miles",
-                    "result_tally_value_in_meters": 712472.683,
-                }
-            ],
-        }
-
-        # Configue Mock object's return value.
-        mock_post.return_value.json.return_value = mock_json_response
-
-        # Assertions.
-        mock_post.return_value.status_code = 200
-        self.assertEqual(app.get_miles(input_href), expected)
-
-        mock_post.return_value.status_code = 429
-        self.assertEqual(app.get_miles(input_href), 0)
 
     @unittest.skip("Update to be async/ work with coroutine object")
     @patch("app.get_identifiers")
