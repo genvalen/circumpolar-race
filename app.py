@@ -184,8 +184,8 @@ def get_miles(href: str) -> float:
         except Exception as e:
             logger.error(f"Error while fetching url {url}: {e}")
 
-        logger.warning(f"Max retries exceeded for fetching miles from url: {url}. Data from this request will be skipped.")
-        return 0
+    logger.warning(f"Max retries exceeded for fetching miles from url: {url}. Data from this request will be skipped.")
+    return 0
 
 
 

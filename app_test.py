@@ -112,8 +112,12 @@ class TestAppFunctions(unittest.TestCase):
         # Configue Mock object's return value.
         mock_post.return_value.json.return_value = mock_json_response
 
-        # Assertion.
+        # Assertions.
+        mock_post.return_value.status_code = 200
         self.assertEqual(app.get_miles(input_href), expected)
+
+        mock_post.return_value.status_code = 429
+        self.assertEqual(app.get_miles(input_href), 0)
 
     @unittest.skip("Update to be async/ work with coroutine object")
     @patch("app.get_identifiers")
