@@ -1,5 +1,4 @@
 import os
-import requests
 import aiohttp
 import asyncio
 import pandas as pd
@@ -61,11 +60,11 @@ async def get_bs4_soup(url: str, group: str = "") -> str:
             soup = BeautifulSoup(html, "lxml")
             return soup
 
-def get_region_paths(team_name) -> Dict[int, str]:
+async def get_region_paths(team_name) -> Dict[int, str]:
     """Return a dictionary where key is a region number and value is
     a path to the webpage containing data for said region.
     """
-    soup = get_bs4_soup(
+    soup = await get_bs4_soup(
         url="https://runsignup.com/RaceGroups/95983?groupName=",
         group=team_name,
     )
@@ -94,7 +93,7 @@ def get_region_paths(team_name) -> Dict[int, str]:
     return region_url_dict
 
 
-async def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
+async def get_identifiers(session, href: str) -> Tuple[str, str, str, str, str, str]:
     """Make HTTP request returning the following particpant
     identifiers: first name, last name, gender, age, city, and state.
     """
@@ -127,19 +126,18 @@ async def get_identifiers(href: str) -> Tuple[str, str, str, str, str, str]:
 
 
     # Make aiohttp request.
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=headers, params=payload) as resp:
-            try:
-                resp = await resp.json()
-                resp_dict = resp["participants"][0]
-                keys = ["first_name", "last_name", "gender", "age", "city", "state"]
-                data = tuple(resp_dict[k] for k in keys)
-                return data
-            except Exception as e:
-                return str(e)
+    async with session.get(url, headers=headers, params=payload) as resp:
+        try:
+            resp = await resp.json()
+            resp_dict = resp["participants"][0]
+            keys = ["first_name", "last_name", "gender", "age", "city", "state"]
+            data = tuple(resp_dict[k] for k in keys)
+            return data
+        except Exception as e:
+            return str(e)
 
 
-async def get_miles(href: str, max_retries=3) -> float:
+async def get_miles(session, href: str, max_retries=2) -> float:
     """Make HTTP request returning the total number of miles completed
     by a participant at the end of the region.
     """
@@ -166,35 +164,50 @@ async def get_miles(href: str, max_retries=3) -> float:
     data = f"userIdCsv={user_id}"
 
     # Make aiohttp request.
-    async with aiohttp.ClientSession() as session:
-        for retry_attempt in range(0, max_retries+1):  # retry logic in case of rate limitation.
-            try:
-                async with session.post(url, headers=headers, data=data) as resp:
-                    if resp.status_code == 200:
-                        json_data = await resp.json()
-                        if retry_attempt == 0:
-                            logger.info(f"Successful request for url: {url}. Status: Proccessed.")
-                        else:
-                            logger.warning(f"Successful request for url: {url}. Status: Proccessed.")
-                        return json_data["results"][0]["result_tally_value"]
-
-                    elif resp.status_code == 429:  # too many requests
-                        wait = random.uniform(1, 2) * (2 ** retry_attempt)
-                        logger.warning(f"Rate limit hit on url: {url}. Retrying after {wait:.2f} seconds.")
-                        await asyncio.sleep(wait)
-
+    for retry_attempt in range(0, max_retries+1):  # retry logic in case of rate limitation.
+        try:
+            await asyncio.sleep(random.uniform(0.1, 0.5))  #make each request time slightly different
+            async with session.post(url, headers=headers, data=data) as resp:
+                if resp.status == 200:
+                    json_data = await resp.json()
+                    if retry_attempt == 0:
+                        logger.info(f"Successful request for url: {url}. Status: Proccessed.")
                     else:
-                        logger.error(f"Error while fetching url {url}: {e}")
-                        break
+                        logger.warning(f"Successful request for url: {url}. Status: Proccessed.")
+                    return json_data["results"][0]["result_tally_value"]
 
-            except Exception as e:
-                logger.error(f"Error while fetching url {url}: {e}")
+                elif resp.status == 429:  # too many requests
+                    wait = random.uniform(1, 2) * (2 ** retry_attempt)
+                    logger.warning(f"Rate limit hit on url: {url}. Retrying after {wait:.2f} seconds.")
+                    await asyncio.sleep(wait)
+
+                else:
+                    logger.error(f"Error while resolving rate limited url {url}: {e}")
+                    break
+
+        except Exception as e:
+            logger.error(f"Error while fetching url {url}: {e}")
 
     logger.warning(f"Max retries ({max_retries}) exceeded for fetching miles from url: {url}. Data from this request will be skipped.")
     return 0
 
 
-def get_participant_data(
+async def get_data_helper(session, href, scraped_name, scraped_name_to_full_name_map):
+    if scraped_name not in scraped_name_to_full_name_map:
+        # Make aiohttp request returning: full name, age, gender, city, state. Needed for entity resolution.
+        identifiers = await get_identifiers(session, href)
+
+        # Update dict of participants seen.
+        full_name = " ".join(identifiers[:2])  # full name
+        scraped_name_to_full_name_map[scraped_name] = full_name
+
+        return full_name, identifiers, await get_miles(session, href)
+
+    full_name = scraped_name_to_full_name_map[scraped_name]
+    return full_name, None, await get_miles(session, href) # Make aiohttp request returning: total miles
+
+
+async def get_participant_data(
     team_name,
 ) -> Tuple[Set[str], Dict[int, Dict[str, float]], List[Tuple[str, ...]]]:
     """Return a tuple containing 3 items:
@@ -208,78 +221,65 @@ def get_participant_data(
         first name, last name, gender, age, city, state.
     """
     url_base = "https://runsignup.com"
-    region_url_dict = get_region_paths(team_name)
+    region_url_dict = await get_region_paths(team_name)
 
     race_results = {}
     participant_identifiers = []
 
     scraped_name_to_full_name_map = {}
-    region_to_scraped_name_href_map = {}
 
-    # Iterate through webpage for each region in the race (12 regions).
+    # Iterate through webpage for each region in the race (12 total regions).
     start_time = time.perf_counter()
 
-    for region, path in region_url_dict.items():
-        url = url_base + path
-        soup = get_bs4_soup(url)
+    async with aiohttp.ClientSession() as session:
+        for region, path in region_url_dict.items():
+            url = url_base + path
+            soup = await get_bs4_soup(url)
 
-        region_results = {}
+            region_results = {}
+            tasks = []
 
-        # Add sleep to avoid rate limit error
-        wait = random.uniform(1,2)
-        time.sleep(wait)
+            # Iterate through each participant in the current region.
+            # Scrape name and HREF for each.
+            # HREF - used in HTTP call returning participant's data for cur region.
+            # Name - used w/ `scraped_name_to_full_name_map` to prevent over-use of HTTP calls.
 
-        # Iterate through each particpant in the current region.
-        # Scrape name and HREF for each.
-        # HREF - used in HTTP call returning participant's data for cur region.
-        # Name - used w/ `scraped_name_to_full_name_map` to prevent over-use of HTTP calls.
+            for tag in soup.find_all(
+                name="a", class_="rsuBtn rsuBtn--text-whitebg rsuBtn--xs margin-r-0"
+            ):
 
-        for tag in soup.find_all(
-            name="a", class_="rsuBtn rsuBtn--text-whitebg rsuBtn--xs margin-r-0"
-        ):
+                href = tag["href"]
+                scraped_name = tag.text.strip()  # incomplete name: scraped_name contains only first_name and last initial.
+                tasks.append(get_data_helper(session, href, scraped_name, scraped_name_to_full_name_map))
 
-            href = tag["href"]
-            scraped_name = tag.text.strip()  # incomplete name -> first scraped_name/last initial
-            region_to_scraped_name_href_map[region] = {scraped_name: href}
+            results = await asyncio.gather(*tasks)
 
-            if scraped_name not in scraped_name_to_full_name_map:
+            for full_name, identifiers, miles in results:
+                region_results[full_name] = miles
+                if identifiers:
+                    participant_identifiers.append(tuple(identifiers))
 
-                # Make HTTP call returning: full name, age, gender, city, state.
-                identifiers = get_identifiers(href)
-
-                # Store identifiers for entity resolution.
-                participant_identifiers.append(tuple(identifiers))
-
-                # Update dict of participants seen.
-                full_name = " ".join(identifiers[:2])  # full name
-                scraped_name_to_full_name_map[scraped_name] = full_name
-
-            # Make HTTP call returning: total miles
-            # Update region_results with participant's total miles.
-            full_name = scraped_name_to_full_name_map[scraped_name]
-            region_results[full_name] = get_miles(href)
-
-        # Update overall race results with results from current region.
-        race_results[region] = region_results
+            # Update overall race results with results from current region.
+            race_results[region] = region_results
 
     # Create set of full names of all participants in the race.
     participant_names = set(scraped_name_to_full_name_map.values())
 
-    logger.info(f"we have collected all of the participant data needed in {time.perf_counter() - start_time:.2f}.")
+    logger.info(f"We have collected all of the participant data needed in {time.perf_counter() - start_time:.2f} seconds.")
 
     return participant_names, race_results, participant_identifiers
 
 
 def generate_spreadsheet(team_name):
     # Get data for participants in the team specified.
-    names, src_data, _ = get_participant_data(team_name)
+    names, src_data, _ = asyncio.run(get_participant_data(team_name))
 
     # Prepare a dict from which to make a spreadsheet of participant data.
     data = defaultdict(list)
     names = sorted(list(names))
     data["Team Member"].extend(names)
 
-    # Create a column for each region where each record is
+    # Create a column for each region. Each record is
     # the number of miles a participant has logged for that region.
     # Miles inputs are ordered based on the Team Member column.
     for name in names:
@@ -325,7 +325,7 @@ def generate_spreadsheet(team_name):
     # Add style to excel spreadsheet
     style_spreadsheet(filepath, sheet_name=BASE_OUTPUT_FILENAME)
 
-    return "The spreadsheet was generated successfully."
+    logger.info(f"Spreadsheet for {team_name} has been generated successfully.")
 
 
 if __name__ == "__main__":

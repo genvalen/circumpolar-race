@@ -1,14 +1,20 @@
 import unittest
-from unittest.mock import patch, AsyncMock
-import asyncio
-import aiohttp
+from unittest.mock import patch, AsyncMock, MagicMock
 from bs4 import BeautifulSoup
+import logging
+from itertools import cycle
 
 import app
 import fixtures.MockData as mock_html
 
+class QuietAsyncTestCase(unittest.IsolatedAsyncioTestCase):
+    @classmethod
+    def setUpClass(cls):
+        logging.getLogger("asyncio").setLevel(logging.ERROR)  # silence asyncio logger
+        logging.getLogger("app").setLevel(logging.ERROR)
 
-class TestAsyncAppFunctions(unittest.IsolatedAsyncioTestCase):
+
+class TestAsyncAppFunctions(QuietAsyncTestCase):
     maxDiff = None  # make failing tests easier to debug
 
     @patch("aiohttp.ClientSession.get")
@@ -18,9 +24,9 @@ class TestAsyncAppFunctions(unittest.IsolatedAsyncioTestCase):
 
         # Set up async mock response
         mock_resp = AsyncMock()
-        mock_resp.text =  AsyncMock(return_value=mock_html)
+        mock_resp.text.return_value = mock_html
 
-        # set up mock get w/ __aenter__ (used to mimic a return from a context manager)
+        # Set up mock get w/ __aenter__ (used to mimic a return from a context manager)
         mock_get.return_value.__aenter__.return_value = mock_resp
 
         url = "mock_url"
@@ -30,8 +36,7 @@ class TestAsyncAppFunctions(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(bs4_soup, BeautifulSoup)
         self.assertEqual(bs4_soup.text, expected_text)
 
-    @patch("app.aiohttp.ClientSession.get")
-    async def test_info_returned_by_get_identifiers_is_correct(self, mock_get):
+    async def test_info_returned_by_get_identifiers(self):
         input_href = "/mock/href/query/?resultSetId=212380#U44542375"
         expected = ("Lin Manuel", "Miranda", "M", 54, "Munster", "IN")
         mock_json_response = {
@@ -53,22 +58,23 @@ class TestAsyncAppFunctions(unittest.IsolatedAsyncioTestCase):
             ]
         }
 
-        # Configure mock context manager.
+        # Configure mock response and context manager.
         mock_resp = AsyncMock()
-        mock_resp.json = AsyncMock(return_value=mock_json_response)
+        mock_resp.json.return_value = mock_json_response
+        mock_resp.__aenter__.return_value = mock_resp
 
-        # Configue mock object's return value.
-        mock_get.return_value.__aenter__.return_value = mock_resp
+        # Configue mock session.
+        mock_session = MagicMock()
+        mock_session.get.return_value = mock_resp
 
-        result = await app.get_identifiers(input_href)
+        result = await app.get_identifiers(mock_session, input_href)
 
         # Assertion.
         self.assertEqual(result, expected)
 
-    @patch("app.logger")
+
     @patch("asyncio.sleep")
-    @patch("aiohttp.ClientSession.post")
-    async def test_miles_returned_by_get_miles_is_correct(self, mock_post, mock_sleep, mock_logger):
+    async def test_miles_returned_by_get_miles(self, mock_sleep):
         input_href_200 = "/mock_200/href/query//?resultSetId=212380#U44542375"
         input_href_429 = "/mock_429/href/query//?resultSetId=212380#U44542375"
         expected_200 = 442.71
@@ -86,19 +92,21 @@ class TestAsyncAppFunctions(unittest.IsolatedAsyncioTestCase):
         }
 
         mock_sleep.return_value = None # mock sleep to speed up testing output.
-        mock_logger.return_value = None  # mock logger to clean up test output.
 
-        # Configure mock context manager.
+        # Configure 2 mock responses, one successful and one not.
         mock_resp_200 = AsyncMock()
         mock_resp_200.json = AsyncMock(return_value=mock_json_response)
-        mock_resp_200.status_code = 200
+        mock_resp_200.status = 200
 
         mock_resp_429 = AsyncMock()
         mock_resp_429.json = None
-        mock_resp_429.status_code = 429
+        mock_resp_429.status = 429
 
-        # Configue mock object's return value for 1 aiohttp request plus n retries.
-        mock_post.side_effect = [
+        # Configue mock session
+        mock_session = MagicMock()
+
+        # Configure multiple mock_session return values in order to test retry-logic.
+        mock_session.post.side_effect = [
             AsyncMock(__aenter__ = AsyncMock(return_value=mock_resp_429)),  # initial request for input_href_429
             AsyncMock(__aenter__ = AsyncMock(return_value=mock_resp_429)),  # first retry
             AsyncMock(__aenter__ = AsyncMock(return_value=mock_resp_429)),  # second retry
@@ -109,105 +117,66 @@ class TestAsyncAppFunctions(unittest.IsolatedAsyncioTestCase):
         ]
 
         # Assertions.
-        result = await app.get_miles(input_href_429, max_retries=2)
+        result = await app.get_miles(mock_session, input_href_429, max_retries=2)
         self.assertEqual(result, expected_429)
 
-        result = await app.get_miles(input_href_200, max_retries=3)
+        result = await app.get_miles(mock_session, input_href_200, max_retries=3)
         self.assertEqual(result, expected_200)
 
-
-class TestAppFunctions(unittest.TestCase):
-    maxDiff = None  # make failing tests easier to debug
-
-    @unittest.skip("Update to be async/ work with coroutine object")
-    @patch("app.get_bs4_soup")
-    def test_endpoints_returned_by_get_region_paths(self, mock_get):
-        expected = {
-            1: "/RaceGroups/95983/Groups/1",
-            2: "/RaceGroups/95983/Groups/2",
-            3: "/RaceGroups/95983/Groups/3",
-            4: "/RaceGroups/95983/Groups/4",
-            5: "/RaceGroups/95983/Groups/5",
-            6: "/RaceGroups/95983/Groups/6",
-            7: "/RaceGroups/95983/Groups/7",
-            8: "/RaceGroups/95983/Groups/8",
-            9: "/RaceGroups/95983/Groups/9",
-            10: "/RaceGroups/95983/Groups/10",
-            11: "/RaceGroups/95983/Groups/11",
-            12: "/RaceGroups/95983/Groups/12",
-        }
-
-        # Configue Mock object's return value
-        mock_get.return_value = mock_html.mock_soup
-
-        # Assertion.
-        self.assertDictEqual(app.get_region_paths("mock_team_name"), expected)
-
-
-    @unittest.skip("Update to be async/ work with coroutine object")
-    @patch("app.get_identifiers")
-    @patch("app.get_miles")
-    @patch("app.get_bs4_soup")
-    @patch("app.get_region_paths")
-    def test_data_is_organized_correctly_by_get_participant_data(
-        self, mock_region_paths, mock_soup, mock_miles, mock_id
+    @patch("app.get_miles", new_callable=AsyncMock)  #default new_callable is MagicMock
+    @patch("app.get_identifiers", new_callable=AsyncMock)
+    @patch("app.get_bs4_soup", new_callable=AsyncMock)
+    @patch("app.get_region_paths", new_callable=AsyncMock)
+    async def test_get_participant_data(
+        self, mock_region_paths, mock_soup, mock_ids, mock_miles
     ):
-        # Configure mock return value.
+        # Configure mock return value for region URL paths.
         mock_region_paths.return_value = {
-            1: "mock/RaceGroups/95983/Groups/802853",
-            2: "mock/RaceGroups/95983/Groups/813501",
-            3: "mock/RaceGroups/95983/Groups/832629",
-            4: "mock/RaceGroups/95983/Groups/843369",
-            5: "mock/RaceGroups/95983/Groups/855643",
-            6: "mock/RaceGroups/95983/Groups/861224",
-            7: "mock/RaceGroups/95983/Groups/894179",
-            8: "mock/RaceGroups/95983/Groups/894180",
-            9: "mock/RaceGroups/95983/Groups/894181",
-            10: "mock/RaceGroups/95983/Groups/894182",
-            11: "mock/RaceGroups/95983/Groups/894183",
-            12: "mock/RaceGroups/95983/Groups/894184",
-        }
+                1: "/RaceGroups/95983/Groups/1",
+                2: "/RaceGroups/95983/Groups/2",
+                3: "/RaceGroups/95983/Groups/3",
+                4: "/RaceGroups/95983/Groups/4",
+                5: "/RaceGroups/95983/Groups/5",
+                6: "/RaceGroups/95983/Groups/6",
+                7: "/RaceGroups/95983/Groups/7",
+                8: "/RaceGroups/95983/Groups/8",
+                9: "/RaceGroups/95983/Groups/9",
+                10: "/RaceGroups/95983/Groups/10",
+                11: "/RaceGroups/95983/Groups/11",
+                12: "/RaceGroups/95983/Groups/12",
+            }
 
-        # Configure mock side-effects.
-        #   * Alternate 2 sets of mock HTML between 12 regions.
-        #   * Scrape HTML 1 for 2 participants.
-        #   * Scrape HTML 2 for 3 participants.
-        #   * Mock HTTP resp. for mileage results of each participant (5 results).
-        #   * Mock HTTP resp. for ID of each unique participant (4 unique).
-        #       - note: should be 3 unique, but there is entity resolution issue.
+        # Configure mock return values with side-effects for app.get_bs4_soup.
+        #   * Stub response for each of 12 regions by alternating 2 mock-soup (HTML) responses.
+        #   * mock_soup1 contains data for 2 participants.
+        #   * mock_soup2 contains data for 3  participants, some which overlap with mock_soup1.
+        #   * Coordinate w/ mock html to correctly mock mile side-effects and identifer side-effects.
+        #       - note: There are 3 unique participants, but there is an entity resolution issue, so expect 4.
 
-        mock_sp1, mock_sp2 = mock_html.bs4_objs
-        mock_soup.side_effect = [mock_sp1, mock_sp2] * 6
-        mock_miles.side_effect = [100.50, 200.50, 300.50, 400.50, 80.50] * 6
-        mock_id.side_effect = [
+        mock_soup1, mock_soup2 = mock_html.bs4_objs
+        mock_soup.side_effect = [mock_soup1 if i % 2 == 0 else mock_soup2 for i in range(12)]
+
+        # Configure mock return values with side-effects for app.get_identifiers.
+        mock_ids.side_effect = [
             ("Christopher", "Jackson", "M", 47, "Indian Mound", "TN"),
             ("Karen", "Olivo", "F", 54, "Munster", "IN"),
             ("Chris", "Jackson", "M", 48, "Indian Mound", "TN"),
             ("Jonathon", "Groff", "M", 58, "Portage", "IN"),
         ]
 
-        # TESTS->
-        # Test data structures returned by get_participant_data.
-        (
-            participant_names,
-            monthly_mileage_results,
-            participant_identifiers,
-        ) = app.get_participant_data("mock_team_name")
+        # Configure mock return values with side-effects for app.get_miles.
+        mile_values = cycle([100.50, 200.50, 300.50, 400.50, 80.50])  # Cycle through integers as needed while preserving sequence order.
+        mock_miles.side_effect = mile_values
 
-        results_to_test = [
-            # tuples contain: given result, expected result.
-            (
-                participant_names,
-                {
+        # EXPECTED RESPONSES.
+        expected_names = {
                     "Chris Jackson",
                     "Christopher Jackson",
                     "Jonathon Groff",
                     "Karen Olivo",
-                },
-            ),
-            (
-                monthly_mileage_results,
-                {
+                }
+
+        expected_miles = {
                     1: {
                         "Christopher Jackson": 100.50,
                         "Karen Olivo": 200.50,
@@ -262,23 +231,60 @@ class TestAppFunctions(unittest.TestCase):
                         "Karen Olivo": 400.50,
                         "Jonathon Groff": 80.50,
                     },
-                },
-            ),
-            (
-                participant_identifiers,
-                [
-                    ("Christopher", "Jackson", "M", 47, "Indian Mound", "TN"),
-                    ("Karen", "Olivo", "F", 54, "Munster", "IN"),
-                    ("Chris", "Jackson", "M", 48, "Indian Mound", "TN"),
-                    ("Jonathon", "Groff", "M", 58, "Portage", "IN"),
-                ],
-            ),
+                }
+
+        expected_identifiers = [
+            ("Christopher", "Jackson", "M", 47, "Indian Mound", "TN"),
+            ("Karen", "Olivo", "F", 54, "Munster", "IN"),
+            ("Chris", "Jackson", "M", 48, "Indian Mound", "TN"),
+            ("Jonathon", "Groff", "M", 58, "Portage", "IN"),
         ]
 
-        # Assertion.
-        for result, expected in results_to_test:
+        # TESTS: Test content of data structures returned by app.get_participant_data.
+        (
+            participant_names,
+            monthly_mileage_results,
+            participant_identifiers,
+        ) = await app.get_participant_data("mock_team_name")
+
+        test_cases = [
+            # tuples contain: given result, expected result.
+            (participant_names, expected_names),
+            (monthly_mileage_results, expected_miles),
+            (participant_identifiers, expected_identifiers),
+        ]
+
+        for result, expected in test_cases:
             with self.subTest('"result" -> "expected"'):
                 self.assertEqual(result, expected)
+
+
+class TestAppFunctions(unittest.TestCase):
+    maxDiff = None  # make failing tests easier to debug
+
+    @unittest.skip("Update to be async/ work with coroutine object")
+    @patch("app.get_bs4_soup")
+    def test_endpoints_returned_by_get_region_paths(self, mock_get):
+        expected = {
+            1: "/RaceGroups/95983/Groups/1",
+            2: "/RaceGroups/95983/Groups/2",
+            3: "/RaceGroups/95983/Groups/3",
+            4: "/RaceGroups/95983/Groups/4",
+            5: "/RaceGroups/95983/Groups/5",
+            6: "/RaceGroups/95983/Groups/6",
+            7: "/RaceGroups/95983/Groups/7",
+            8: "/RaceGroups/95983/Groups/8",
+            9: "/RaceGroups/95983/Groups/9",
+            10: "/RaceGroups/95983/Groups/10",
+            11: "/RaceGroups/95983/Groups/11",
+            12: "/RaceGroups/95983/Groups/12",
+        }
+
+        # Configue Mock object's return value
+        mock_get.return_value = mock_html.mock_soup
+
+        # Assertion.
+        self.assertDictEqual(app.get_region_paths("mock_team_name"), expected)
 
 
 class TestFlaskRequests(unittest.TestCase):
